@@ -893,7 +893,7 @@ function nextMonth(){
   if(S.lowM>0)S.offers=[];else genOffers();
   dirtyMini=true;
   var elect=((S.month-1)%12===0&&S.month>1);
-  check();ui();
+  check();ui();saveGame();
   if(elect&&!S.over){
     if(S.rank>=2)openElection();
     else addLog('Вибори до міськради пройшли без тебе. Ти ще не в грі.','');
@@ -908,7 +908,7 @@ function check(){
   if(S.castle.length===UPG.length)return finish('win');
 }
 function finish(k){
-  S.over=true;$('auWrap').hidden=true;closeDeal();$('elWrap').hidden=true;
+  S.over=true;try{localStorage.removeItem(SAVEK);}catch(e){}$('auWrap').hidden=true;closeDeal();$('elWrap').hidden=true;
   var T={
     caught:['За вами приїхали','Журналісти, перевірки й чиїсь діти з телефонами зробили свою справу. Ухвалу почали читати з золотого унітаза.'],
     riot:['Район повстав','Настрій упав майже до нуля. Люди вийшли на вулиці, які ти так і не полатав.'],
@@ -2008,8 +2008,34 @@ function titleShow(panel){
     $('stRd').onchange=function(){reduce=this.checked;window.__rd=this.checked;savePrefs();};
   }
 }
+var SAVEK='k2000s';
+function saveGame(){
+  if(!S||S.over||!STARTED)return;
+  try{
+    var c={};for(var k in S)c[k]=S[k];
+    c.audits=S.audits.map(function(a){return {kind:a.kind,fine:a.fine,fi:S.fops.indexOf(a.f)};});
+    c.events=S.events.filter(function(e){return e.kind==='wash';});
+    localStorage.setItem(SAVEK,JSON.stringify(c,function(k,v){return k==='sk'?undefined:v;}));
+  }catch(e){}
+}
+function hasSave(){try{return !!localStorage.getItem(SAVEK);}catch(e){return false;}}
+function loadGame(){
+  try{
+    var j=localStorage.getItem(SAVEK);if(!j)return false;
+    var t=JSON.parse(j);if(!t||!t.objs||t.objs.length!==N*N||!t.fops||!t.fops.length)return false;
+    t.audits=(t.audits||[]).map(function(a){return {kind:a.kind,fine:a.fine,f:a.fi>=0?t.fops[a.fi]:null};});
+    t.speed=0;t.over=false;S=t;cars=genCars();
+    $('end').hidden=true;$('auWrap').hidden=true;$('dealWrap').hidden=true;$('elWrap').hidden=true;
+    dirtyMini=true;updateRating();return true;
+  }catch(e){return false;}
+}
+function contGame(){
+  if(!STARTED){if(!loadGame())return;startGame(false);maybeAudit();}else startGame(false);
+}
+document.addEventListener('visibilitychange',function(){if(document.hidden)saveGame();});
+window.addEventListener('pagehide',saveGame);
 function savePrefs(){try{localStorage.setItem('k2000',JSON.stringify({mk:SHOWMK,rd:!!window.__rd}));}catch(e){}}
-function openTitle(){TITLE=true;S.speed=0;$('title').hidden=false;titleShow(null);$('tCont').hidden=!STARTED;$('tStart').textContent=STARTED?'Нова гра':'Старт';}
+function openTitle(){TITLE=true;S.speed=0;$('title').hidden=false;titleShow(null);$('tCont').hidden=!(STARTED||hasSave());$('tStart').textContent=(STARTED||hasSave())?'Нова гра':'Старт';}
 function startGame(fresh){
   if(fresh&&STARTED)newGame();
   TITLE=false;STARTED=true;$('title').hidden=true;
@@ -2017,12 +2043,12 @@ function startGame(fresh){
   ui();
 }
 $('tStart').addEventListener('click',function(){startGame(true);});
-$('tCont').addEventListener('click',function(){startGame(false);});
+$('tCont').addEventListener('click',contGame);
 $('tHow').addEventListener('click',function(){titleShow('how');});
 $('tSet').addEventListener('click',function(){titleShow('set');});
 $('tBack').addEventListener('click',function(){titleShow(null);});
 $('menuBtn').addEventListener('click',openTitle);
-document.addEventListener('keydown',function(e){if(TITLE&&e.key==='Enter'&&$('tPanel').hidden)startGame(!STARTED?true:false);});
+document.addEventListener('keydown',function(e){if(TITLE&&e.key==='Enter'&&$('tPanel').hidden){if(STARTED||hasSave())contGame();else startGame(true);}});
 var lastT=0;
 function frame(now){
   var dt=lastT?Math.min(80,now-lastT):0;lastT=now;
@@ -2037,6 +2063,7 @@ function frame(now){
 if(typeof window.__EXPOSE==='function')window.__EXPOSE({get S(){return S},get D(){return D},get E(){return E},newGame:newGame,nextMonth:nextMonth,tickTime:tickTime,openDeal:openDeal,tryDeal:tryDeal,signDeal:signDeal,renderDeal:renderDeal,rankUp:rankUp,openElection:openElection,runElection:runElection,resolveEvent:resolveEvent,citySites:citySites,genHappenings:genHappenings,openAnnual:openAnnual,annualTick:annualTick,resolveAudit:resolveAudit,maybeAudit:maybeAudit,genOffers:genOffers,ui:ui,drawMap:drawMap,drawMini:drawMini,drawCastle:drawCastle,chance:chance,setD:function(k,v){D[k]=v;},updateRating:updateRating,tap:tap,setZoom:setZoom,centerOn:centerOn});
 loadAtlases();loadSprites();
 newGame();
+if(hasSave()){$('tCont').hidden=false;$('tStart').textContent='Нова гра';}
 resizeMap();
 requestAnimationFrame(frame);
 })();
