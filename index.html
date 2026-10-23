@@ -193,6 +193,19 @@ var KIND={direct:'прямий договір',tender:'тендер',auction:'а
 var GATE={direct:'Начальник ЖЕКу',tender:'Тендерний комітет КП',auction:'Комісія з МАФів'};
 var LOSE=['Договір дістався племіннику начальника.','Хтось запропонував більше, ніж ти.','«Ми вас почули. Ми вам передзвонимо».','Тендер скасували, і через тиждень оголосили такий самий.'];
 
+var DEC={
+  bench:{n:'Лавочки',base:25,real:.3,hint:'Лавка в закупівлі коштує як гарний гаманець, а в кошторисі як мотоцикл.'},
+  lamp:{n:'Ліхтарі',base:40,real:.4,hint:'Ліхтар «розумний», хоча світить так само. Різниця йде в кишеню.'},
+  curb:{n:'Бордюри',base:35,real:.5,hint:'Бордюри перекладають щороку, ніби їх хтось крадe. Хтось і краде.'},
+  play:{n:'Дитячий майданчик',base:90,real:.45,hint:'Гірка з «сертифікованого» металу. Сертифікат справжній, метал ні.'},
+  stop:{n:'Зупинка',base:140,real:.5,hint:'Скляна «смарт-зупинка» без смарту й без скла. Але тендер є.'},
+  fountain:{n:'Фонтан',base:380,real:.35,hint:'Фонтан працює два тижні в рік, акт підписано на дванадцять місяців.'},
+  led:{n:'LED-освітлення проспекту',base:450,real:.4,hint:'Енергозбереження на папері, а лампочки колишні.'},
+  mon:{n:'Пам\'ятник',base:900,real:.25,hint:'Бронза за ціною золота, виливають із чого знайдуть. Приймають усі.'}
+};
+var DECR={R:[['led',13,2],['stop',7,1],['lamp',5,0],['curb',3,0]],Y:[['play',5,0],['bench',2,0]],P:[['mon',17,3],['fountain',6,2],['play',4,0],['bench',1,0]]};
+function decKind(o,X,Y){var L=DECR[o.t];if(!L)return null;var h=hashXY(X,Y);for(var i=0;i<L.length;i++)if(h%L[i][1]===0&&S.rank>=L[i][2])return L[i][0];return null}
+function nichesNote(){var seen={},u=[],l=[];Object.keys(DECR).forEach(function(t){DECR[t].forEach(function(e){if(seen[e[0]])return;seen[e[0]]=1;if(S.rank>=e[2])u.push(DEC[e[0]].n);else l.push(DEC[e[0]].n+' ('+RANKS[e[2]]+')');});});return '<div class="sec">Ніші благоустрою</div><p class="note">Відкрито: '+u.join(', ')+'.'+(l.length?' Далі: '+l.join(', ')+'.':'')+' Чим жирніша ніша, тим більше різниця між кошторисом і закупівлею.</p>';}
 var S, D=null, E=null, cars=[], floaters=[], hits=[], hover=null, dirtyMini=true, lastLabel='';
 var CAM_SPR={};
 
@@ -248,6 +261,7 @@ function genWorld(){
              o.t==='B'?'міст через Дніпро':
              o.t==='H'?'буд. '+(10+x%40+y%7):o.t==='S'?'школа №'+(100+(x*3+y)%90):
              o.t==='P'?'сквер «Каштановий»':o.t==='Y'?'двір, буд. '+(10+x%40+y%7):o.t==='L'?'пустир':o.t==='K'?'місце під МАФ':'';
+      var dk=decKind(o,x,y);if(dk&&(hashXY(y,x)%3)===0)o.dec={k:dk,c:rnd(20,75),q:.5};
     }
     objs[i2]=o;
   }
@@ -290,7 +304,7 @@ function updateRating(){
   var s=0,n=0,r=ZR[S.rank],x0=Math.max(0,HOME.x-r),x1=Math.min(N-1,HOME.x+r),y0=Math.max(0,HOME.y-r),y1=Math.min(N-1,HOME.y+r),x,y,o;
   for(y=y0;y<=y1;y++)for(x=x0;x<=x1;x++){
     o=S.objs[y*N+x];if(!o||!inZone(x,y))continue;
-    if('RYHSPB'.indexOf(o.t)>=0){s+=o.c;n++;}else if(o.t==='N'){s+=100;n++;}
+    if('RYHSPB'.indexOf(o.t)>=0){s+=o.c+(o.dec?(o.dec.c-50)*.2:0);n++;}else if(o.t==='N'){s+=100;n++;}
   }
   S.rt=clamp(Math.round((n?s/n:50)-S.angry),0,100);
 }
@@ -298,7 +312,7 @@ function rating(){return S.rt}
 
 /* ================= ЗАЯВКИ ================= */
 function genOffers(){
-  var cand=[],spec=[],m=mult(),r=ZR[S.rank],x0=Math.max(0,HOME.x-r),x1=Math.min(N-1,HOME.x+r),y0=Math.max(0,HOME.y-r),y1=Math.min(N-1,HOME.y+r),x,y,o,t,off;
+  var cand=[],spec=[],decs=[],m=mult(),r=ZR[S.rank],x0=Math.max(0,HOME.x-r),x1=Math.min(N-1,HOME.x+r),y0=Math.max(0,HOME.y-r),y1=Math.min(N-1,HOME.y+r),x,y,o,t,off;
   for(y=y0;y<=y1;y++)for(x=x0;x<=x1;x++){
     o=S.objs[y*N+x];if(!o||!inZone(x,y))continue;
     t=o.t;off=null;
@@ -312,10 +326,20 @@ function genOffers(){
         title:{R:'Ямковий ремонт',Y:'Плитка у дворі',H:'Утеплення фасаду',S:'Ремонт школи',P:'Благоустрій скверу'}[t]};
     }
     if(off){off.name=o.name;off.c=o.c;(t==='K'||t==='L'||t==='B'?spec:cand).push(off);}
+    else if('RYP'.indexOf(t)>=0){
+      var dk=o.dec?o.dec.k:decKind(o,x,y);
+      if(dk&&(!o.dec||o.dec.c<55)){
+        var dd=DEC[dk],bd=r5(dd.base*rnd(.85,1.2)*m*(o.dec?.9:1));
+        if(S.rank===0)bd=Math.min(95,bd);
+        decs.push({x:x,y:y,t:t,dec:dk,budget:bd,kind:bd<100?'direct':'tender',comp:bd<100?0:rnd(.04,.22),title:dd.n+(o.dec?': заміна':': встановлення'),name:o.name,c:o.c});
+      }
+    }
   }
   function shuf(a){for(var i=a.length-1;i>0;i--){var j=(Math.random()*(i+1))|0,tmp=a[i];a[i]=a[j];a[j]=tmp;}return a;}
-  shuf(cand);shuf(spec);
-  S.offers=spec.slice(0,6).concat(cand.slice(0,26-Math.min(6,spec.length)));
+  shuf(cand);shuf(spec);shuf(decs);
+  var topD=decs.slice().sort(function(a,b){return b.budget-a.budget}).slice(0,S.rank>=2?5:2);
+  var restD=decs.filter(function(d){return topD.indexOf(d)<0}).slice(0,14-topD.length);
+  S.offers=spec.slice(0,6).concat(cand.slice(0,12),topD,restD);
 }
 function offerAt(x,y){for(var i=0;i<S.offers.length;i++)if(S.offers[i].x===x&&S.offers[i].y===y)return S.offers[i];return null}
 
@@ -341,9 +365,10 @@ function openDeal(off){
 }
 function closeDeal(){D=null;$('dealWrap').hidden=true;}
 function renderDeal(){
-  var o=D.off,h='';
+  var o=D.off,h='',rf=o.dec?DEC[o.dec].real:1;
   h+='<h3 id="dealTitle">'+o.title+'</h3><div class="in">';
   h+='<p class="sub"><span class="tag t-'+o.kind+'">'+KIND[o.kind]+'</span>'+o.name+'</p>';
+  if(o.dec)h+='<p class="note">'+DEC[o.dec].hint+' Маржа ніші: <b>'+(rf<.4?'жирна':'пристойна')+'</b>.</p>';
   if(D.step===1){
     h+='<p>Хто вирішує: <b>'+GATE[o.kind]+'</b>. '+(o.kind==='auction'?'Місце під кіоск: ринкова вартість '+o.budget+' тис., на аукціоні віддають за '+o.price+' тис. Рента 7 тис. щомісяця.':'Бюджет: <b>'+o.budget+' тис. ₴</b>. '+(o.kind==='direct'?'До 100 тис. тендера нема, договір віддають «своєму».':'Є ще конкуренти, їхня сила впливає на шанс.'))+'</p>';
     h+='<div class="sec">Як заходиш</div><div class="list">';
@@ -363,7 +388,7 @@ function renderDeal(){
       h+='<div class="acts"><button class="btn primary" data-a="sign"'+(S.cash<up?' disabled':'')+'>Оформити</button><button class="btn" data-a="cancel">Відмовитись</button></div>';
       if(S.cash<up)h+='<p class="note" style="margin-top:6px">Не вистачає готівки: треба '+up+' тис.</p>';
     } else {
-      var t=TIERS[D.tier],costNow=Math.round(o.budget*t.cost),up2=costNow+bribeAmt+tailorAmt,prof=pay-up2,avans=Math.round(pay*.25);
+      var t=TIERS[D.tier],costNow=Math.round(o.budget*t.cost*rf),up2=costNow+bribeAmt+tailorAmt,prof=pay-up2,avans=Math.round(pay*.25);
       var okFops=S.fops.filter(fopOk);
       if(okFops.length&&!fopOk(S.fops[D.fop]))D.fop=S.fops.indexOf(okFops[0]);
       h+='<p><b>Договір твій.</b> Обери, на кого оформити і як робити.</p>';
@@ -376,7 +401,7 @@ function renderDeal(){
       if(!okFops.length)h+='<p class="note" style="margin-top:6px">Нема на кого оформити: ліміт ФОПів вичерпано. Купи ще один ФОП або візьми менший договір.</p>';
       h+='<div class="sec">Як виконуєш</div><div class="list">';
       TIERS.forEach(function(tt,i){
-        h+='<button class="opt" data-a="tier" data-v="'+i+'" aria-pressed="'+(D.tier===i)+'"><b>'+tt.n+'</b><small>Витрати '+Math.round(tt.cost*100)+'% бюджету · '+tt.d+'</small></button>';
+        h+='<button class="opt" data-a="tier" data-v="'+i+'" aria-pressed="'+(D.tier===i)+'"><b>'+tt.n+'</b><small>Витрати ≈ '+Math.round(tt.cost*rf*100)+'% бюджету · '+tt.d+'</small></button>';
       });
       h+='</div>';
       if(S.rank>=2)h+='<div class="list" style="margin-top:6px"><button class="opt" data-a="infl" aria-pressed="'+D.infl+'"><b>Завищений акт</b><small>+25% до оплати · підозра +3 · тебе можуть перевірити</small></button></div>';
@@ -412,13 +437,13 @@ function signDeal(){
     floaters.push({X:o.x,Y:o.y,txt:'Кіоск твій',col:'#d6c8ff',t0:performance.now()});
     addLog('МАФ оформлено. Тепер щомісяця +7 тис., поки не прийдуть із перевіркою.','good');
   } else {
-    var t=TIERS[D.tier],f=S.fops[D.fop],pay=payAmt(),costNow=Math.round(o.budget*t.cost),up2=costNow+bribeAmt+tailorAmt,avans=Math.round(pay*.25);
+    var t=TIERS[D.tier],f=S.fops[D.fop],pay=payAmt(),rfs=o.dec?DEC[o.dec].real:1,costNow=Math.round(o.budget*t.cost*rfs),up2=costNow+bribeAmt+tailorAmt,avans=Math.round(pay*.25);
     if(S.cash<up2-avans||!fopOk(f))return;
     S.cash-=up2;S.cash+=avans;f.used+=pay;
     S.pending.push({due:S.month+(o.kind==='direct'?1:2),amt:pay-avans});
-    obj.c=70+30*t.q;obj.q=t.q;obj.by='me';obj.sk=null;
+    if(o.dec){obj.dec={k:o.dec,c:70+30*t.q,q:t.q};obj.sk=null;}else{obj.c=70+30*t.q;obj.q=t.q;obj.by='me';obj.sk=null;}
     S.fame+=t.fame+(o.budget>=200?1:0);
-    S.risk=clamp(S.risk+1+(D.bribe*10)+(D.tailor?2:0)+(D.infl?3:0)+(t.q<.4?1:0),0,100);
+    S.risk=clamp(S.risk+1+(D.bribe*10)+(D.tailor?2:0)+(D.infl?3:0)+(t.q<.4?1:0)+(o.dec?(1-rfs)*3:0),0,100);
     if(D.bribe>0)S.contacts+=3;
     if(D.infl)S.inflate+=1;
     if(obj.t==='L'){obj.t='N';obj.c=100;S.angry+=4;addLog('Виріс новий ЖК на місці пустиря. Мешканці сусідніх будинків питають про сонце у вікнах.','bad');}
@@ -447,6 +472,7 @@ function nextMonth(){
       if(Math.floor(nc/20)!==Math.floor(o.c/20))o.sk=null;
       o.c=nc;
     }
+    if(o.dec){var dn=clamp(o.dec.c-(.6+(1.5-o.dec.q)*2.4)*k*.45,0,100);if(Math.floor(dn/20)!==Math.floor(o.dec.c/20))o.sk=null;o.dec.c=dn;if(o.dec.q<.4&&o.dec.c<48)bad++;}
     if(o.by==='me'){
       if(o.q<.4&&o.c<48)bad++;
       if(o.q<.35&&o.c<30&&'RYHSPB'.indexOf(o.t)>=0)weak.push(o);
@@ -467,7 +493,7 @@ function nextMonth(){
       else{S.fops.splice(i,1);addLog('Податкова закрила «'+f.name+'»: ні техніки, ні людей, ні пояснень. Штраф '+pen+' тис.','bad');}
     }
   }
-  if(bad&&Math.random()<Math.min(.55,bad*.14)){S.risk=clamp(S.risk+9,0,100);addLog('Журналіст зняв відео про твій «ремонт»: яма вже там, де був асфальт.','bad');}
+  if(bad&&Math.random()<Math.min(.55,bad*.14)){S.risk=clamp(S.risk+9,0,100);addLog(Math.random()<.5?'Журналіст зняв відео про твій «ремонт»: яма вже там, де був асфальт.':'Журналіст порахував: лавка в кошторисі коштує як мотоцикл, а стоїть як табуретка.','bad');}
   if(weak.length&&Math.random()<.25){
     var w=weak[(Math.random()*weak.length)|0];w.c=8;w.sk=null;S.risk=clamp(S.risk+7,0,100);S.angry+=2;
     addLog('Провалилось: '+w.name+'. Пісок замість бетону не витримав.','bad');
@@ -607,6 +633,7 @@ function ui(){
   if(S.fops.filter(function(f){return !f.isCo;}).length<6)fh+='<button class="fopb opt" data-fop="new"'+(S.cash<12||S.over?' disabled':'')+'><b>+ Новий ФОП на родича</b><small>12 тис. · свій ліміт '+FOP_LIMIT+' тис. на місяць</small></button>';
   $('fops').innerHTML=fh;
   var nr=nextReq(),ch='<p style="margin:0 0 8px"><b>'+RANKS[S.rank]+'</b> · слава '+S.fame+' · радіус району '+(S.rank>=3?'усе місто':ZR[S.rank]+' кварталів')+'</p>';
+  ch+=nichesNote();
   if(nr)ch+='<button class="btn gold" data-career="up"'+(nr.ok&&!S.over?'':' disabled')+' style="width:100%">'+nr.t+'</button><p class="note" style="margin-top:4px">'+nr.need+'</p>';
   else if(S.rank===2){
     var nxt=S.month<13?13:Math.ceil((S.month-1)/12)*12+1;
@@ -781,7 +808,8 @@ function dimSprite(key,base){
 function nbRoad(X,Y){if(X<0||Y<0||X>=N||Y>=N)return false;var o=S.objs[Y*N+X];return !!o&&(o.t==='R'||o.t==='B')}
 function roadMask(X,Y){return (nbRoad(X-1,Y)||nbRoad(X+1,Y)?1:0)|(nbRoad(X,Y-1)||nbRoad(X,Y+1)?2:0)}
 function cb(c){return c>=75?0:(c>=55?1:(c>=35?2:3))}
-function keyFor(o,X,Y){
+function keyFor(o,X,Y){var k=keyBase(o,X,Y);return o.dec?k+'~'+o.dec.k+cb(o.dec.c):k}
+function keyBase(o,X,Y){
   var h=hashXY(X,Y),b=cb(o.c||0);
   switch(o.t){
     case 'R':case 'B':return o.t+b+(o.by==='me'&&o.q<.5?'p':'')+'_'+roadMask(X,Y)+'_'+(h&3);
@@ -800,7 +828,8 @@ function groundTile(base,h){
   var d=shade(base,-.1);
   for(var i=0;i<3;i++)pxs(.15+(((h>>(i*3))&7)/7)*.7,.15+(((h>>(i*3+1))&7)/7)*.7,d);
 }
-function paintTile(o,X,Y){
+function paintTile(o,X,Y){paintBase(o,X,Y);if(o&&o.dec)paintDecor(o,X,Y);}
+function paintBase(o,X,Y){
   var h=hashXY(X,Y),c=o?o.c:50,b=cb(c),i;
   if(!o){groundTile(GR[(X+Y)%2],h);return;}
   var t=o.t;
@@ -886,6 +915,40 @@ function paintTile(o,X,Y){
     box(.1,.1,.9,.9,0,76,'#6fb0d8');
     poly([P(.1,.9,70),P(.9,.9,70),P(.9,.9,76),P(.1,.9,76)],'#ffbf2e');
     windows(.1,.9,.1,.9,7,true);
+  }
+}
+function paintDecor(o,X,Y){
+  var d=o.dec,k=d.k,bad=cb(d.c)>=2;
+  if(k==='bench'){
+    box(.3,.6,.7,.72,2,4,bad?'#8a8076':'#a9672f');
+    box(.32,.62,.36,.7,0,2,'#333333');box(.64,.62,.68,.7,0,2,'#333333');
+    box(.3,.6,.7,.63,4,9,bad?'#6b6259':'#7d4a1f');
+    if(bad)pline([P(.4,.72,4),P(.5,.72,2)],'#222222');
+  } else if(k==='lamp'){
+    pline([P(.9,.12,0),P(.9,.12,24)],'#2a2a30');pline([P(.9,.12,24),P(.8,.12,24)],'#2a2a30');
+    ball(.8,.12,25,5,bad?'#6a6a60':'#ffe27a');
+  } else if(k==='curb'){
+    var cc=bad?'#9a9a9a':'#f2f2f2';
+    pline([P(0,0,1),P(1,0,1)],cc);pline([P(1,0,1),P(1,1,1)],cc);
+    if(!bad){pline([P(0,0,1),P(1,0,1)],'#d63a30',[2,2]);pline([P(1,0,1),P(1,1,1)],'#d63a30',[2,2]);}
+  } else if(k==='play'){
+    box(.6,.2,.8,.5,0,10,bad?'#9a8a7a':'#e84a3c');
+    poly([P(.6,.5,10),P(.8,.5,10),P(.8,.85,0),P(.6,.85,0)],bad?'#b0a090':'#ffd23a');
+    box(.2,.3,.4,.34,0,3,bad?'#8a8a8a':'#3f7fd0');box(.18,.4,.42,.44,3,5,bad?'#8a8a8a':'#3f7fd0');
+  } else if(k==='stop'){
+    pline([P(.7,.1,0),P(.7,.1,14)],'#4a4a50');pline([P(.95,.5,0),P(.95,.5,14)],'#4a4a50');
+    box(.93,.1,.95,.5,2,14,'#9fd4f0');
+    poly([P(.68,.08,14),P(.97,.08,14),P(.97,.52,14),P(.68,.52,14)],bad?'#7a7a80':'#2f78d0');
+  } else if(k==='fountain'){
+    circ(.5,.5,.32,3,bad?'#9a9a9a':'#c9ced6');circ(.5,.5,.24,4,bad?'#6a8a6a':'#5fb8f0');
+    pline([P(.5,.5,4),P(.5,.5,14)],'#c9ced6');
+    if(!bad)ball(.5,.5,16,3,'#bfe9ff');
+  } else if(k==='led'){
+    pline([P(.92,.1,0),P(.92,.1,34)],'#d0d0d8');pline([P(.92,.1,34),P(.8,.1,34)],'#d0d0d8');
+    ball(.8,.1,35,5,bad?'#777777':'#c8f4ff');
+  } else if(k==='mon'){
+    box(.3,.3,.7,.7,0,10,'#b0b0b8');box(.4,.4,.6,.6,10,18,'#8f8f98');
+    box(.46,.46,.54,.54,18,22,bad?'#9c8a4a':'#ffd24a');ball(.5,.5,26,8,bad?'#9c8a4a':'#ffd24a');
   }
 }
 function spriteFor(o,X,Y){
