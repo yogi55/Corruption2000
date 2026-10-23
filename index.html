@@ -1428,7 +1428,7 @@ function loadAtlases(){
 }
 
 /* ================= СПРАЙТИ-ШАР (assets/sp) ================= */
-var SPM={"poplar":[158,324],"tree_m":[235,316],"tree_l":[336,356],"birch_m":[194,334],"birch_l":[225,375],"tree_l2":[335,401],"tree_young":[236,256],"tree_s":[155,257],"poplar_au":[162,331],"tree_m_au":[238,320],"tree_l_au":[302,356],"birch_m_au":[200,337],"birch_l_au":[227,387],"tree_l2_au":[304,401],"tree_s_au":[137,204],"tree_s2_au":[172,254],"spruce_l":[295,521],"spruce_m":[283,416],"bush_a":[218,200],"bush_b":[263,224],"hedge":[337,280],"bush_c":[351,245],"bed_red":[424,244],"bed_yellow":[423,224],"bed_blue":[422,225],"bench_g1":[351,333],"bench_o1":[352,335],"lamp_old":[126,647],"lamp_led":[212,668],"stop_a":[400,395],"bin_a":[138,195],"bench_g2":[352,333],"bench_o2":[353,333],"bin_b":[146,201],"kiosk_a":[279,315],"fence_a":[270,320],"bench_g3":[353,335],"bench_o3":[353,340],"lamp_old2":[124,659],"lamp_led2":[176,648],"stop_b":[333,356],"kiosk_b":[320,357],"fence_b":[277,325],"bin_c":[139,196],"bench_o4":[355,341],"stop_c":[327,350],"kiosk_c":[312,351],"fence_c":[277,326],"bench_g4":[339,312],"bin_d":[137,195],"slide":[389,412],"swing_a":[356,415],"sandbox_a":[377,406],"sandbox_b":[377,405],"swing_b":[357,414],"sandbox_c":[377,405],"monument":[324,476],"fountain_f3":[347,387],"flowerclock":[358,243],"fountain_f0":[347,272],"fountain_f1":[346,273],"fountain_f2":[346,300],"fountain2_f2":[347,310],"fountain2_f3":[348,423],"fountain_tier":[346,341],"fountain2_f0":[346,272],"fountain2_f1":[347,266],"fountain3_f2":[346,284],"school_a":[1027,660],"zhk_blue":[297,690],"zhk_green":[315,694],"zhk_red":[312,694],"school_b":[1027,661],"crane_a":[730,703],"crane_b":[711,706]},SPG={"grass_a":[617,324,153,157],"pavers_a":[613,320,155,155],"cobble_a":[615,321,155,155],"parking_a":[615,322,155,154],"grass_b":[616,359,181,182],"pavers_b":[613,359,184,181],"cobble_b":[614,359,181,181],"parking_b":[614,359,180,180],"concrete_a":[614,350,171,171],"field_a":[613,351,173,172],"grass_path":[615,350,170,170],"waste_a":[615,350,170,171],"concrete_b":[613,334,154,153],"field_b":[613,334,153,153],"grass_gravel":[614,336,153,154],"waste_b":[613,335,154,155]},SPI={},SPSC={},SPREADY=false;
+var SPM={"poplar":[158,324],"tree_m":[235,316],"tree_l":[336,356],"birch_m":[194,334],"birch_l":[225,375],"tree_l2":[335,401],"tree_young":[236,256],"tree_s":[155,257],"poplar_au":[162,331],"tree_m_au":[238,320],"tree_l_au":[302,356],"birch_m_au":[200,337],"birch_l_au":[227,387],"tree_l2_au":[304,401],"tree_s_au":[137,204],"tree_s2_au":[172,254],"spruce_l":[295,521],"spruce_m":[283,416],"bush_a":[218,200],"bush_b":[263,224],"hedge":[337,280],"bush_c":[351,245],"bed_red":[424,244],"bed_yellow":[423,224],"bed_blue":[422,225],"bench_g1":[351,333],"bench_o1":[352,335],"lamp_old":[126,647],"lamp_led":[212,668],"stop_a":[400,395],"bin_a":[138,195],"bench_g2":[352,333],"bench_o2":[353,333],"bin_b":[146,201],"kiosk_a":[279,315],"fence_a":[270,320],"bench_g3":[353,335],"bench_o3":[353,340],"lamp_old2":[124,659],"lamp_led2":[176,648],"stop_b":[333,356],"kiosk_b":[320,357],"fence_b":[277,325],"bin_c":[139,196],"bench_o4":[355,341],"stop_c":[327,350],"kiosk_c":[312,351],"fence_c":[277,326],"bench_g4":[339,312],"bin_d":[137,195],"slide":[389,412],"swing_a":[356,415],"sandbox_a":[377,406],"sandbox_b":[377,405],"swing_b":[357,414],"sandbox_c":[377,405],"monument":[324,476],"fountain_f3":[347,387],"flowerclock":[358,243],"fountain_f0":[347,272],"fountain_f1":[346,273],"fountain_f2":[346,300],"fountain2_f2":[347,310],"fountain2_f3":[348,423],"fountain_tier":[346,341],"fountain2_f0":[346,272],"fountain2_f1":[347,266],"fountain3_f2":[346,284],"school_a":[1027,660],"zhk_blue":[297,690],"zhk_green":[315,694],"zhk_red":[312,694],"school_b":[1027,661],"crane_a":[730,703],"crane_b":[711,706],"trc_a":[1052,772,932,712],"trc_b":[1215,786,1147,726],"trc_c":[1215,714,1095,714],"trc_d":[1243,717,1164,697]},SPG={"grass_a":[617,324,153,157],"pavers_a":[613,320,155,155],"cobble_a":[615,321,155,155],"parking_a":[615,322,155,154],"grass_b":[616,359,181,182],"pavers_b":[613,359,184,181],"cobble_b":[614,359,181,181],"parking_b":[614,359,180,180],"concrete_a":[614,350,171,171],"field_a":[613,351,173,172],"grass_path":[615,350,170,170],"waste_a":[615,350,170,171],"concrete_b":[613,334,154,153],"field_b":[613,334,153,153],"grass_gravel":[614,336,153,154],"waste_b":[613,335,154,155]},SPI={},SPSC={},SPREADY=false;
 var SPDEC={bench:1,lamp:1,led:1,stop:1,play:1,fountain:1,mon:1};
 function loadSprites(){
   if(typeof Image==='undefined')return;
@@ -1484,6 +1484,15 @@ function sBlock(X,Y){
   for(var ox=X-1;ox<=X;ox++)for(var oy=Y-1;oy<=Y;oy++)if(isS(ox,oy)&&isS(ox+1,oy)&&isS(ox,oy+1)&&isS(ox+1,oy+1))return true;
   return false;
 }
+function trcGroup(o,X,Y){
+  if(!o||o.t!=='H'||o.bt!=='mall')return null;
+  var lx=X%8,ly=Y%8,gx=(lx===2||lx===3)?0:((lx===5||lx===6)?1:-1),gy=(ly===2||ly===3)?0:((ly===5||ly===6)?1:-1);
+  if(gx<0||gy<0)return null;
+  var ox=X-(lx===3||lx===6?1:0),oy=Y-(ly===3||ly===6?1:0),i,j,q;
+  for(i=0;i<2;i++)for(j=0;j<2;j++){q=S.objs[(oy+j)*N+ox+i];if(!q||q.t!=='H'||q.bt!=='mall')return null;}
+  var hh=hashXY(ox,oy);if(hh%10>=9)return null;
+  return {br:(X===ox+1&&Y===oy+1),idx:(hh>>>3)%4};
+}
 function groundSp(o,X,Y){
   var t=o?o.t:'',p=((X+Y)%2)?'b':'a',z=o&&o.zn,c=o?o.c:80,h=hashXY(X,Y);
   if(t==='S')return sBlock(X,Y)?'pavers_a':null;
@@ -1506,7 +1515,13 @@ function groundSp(o,X,Y){
 function spOver(o,X,Y,sx,sy,z,dim,now){
   if(!o)return;
   var t=o.t,h=hashXY(X,Y),d=o.dec,bad=d?cb(d.c)>=2:false,i;
-  if(t==='S'){
+  if(t==='H'&&o.bt==='mall'){
+    var tg=trcGroup(o,X,Y);
+    if(tg&&tg.br){
+      var tn='trc_'+'abcd'.charAt(tg.idx),tm=SPM[tn],tk=64*z*1.05/tm[2],tc=spScaled(tn,tk,dim);
+      if(tc)mx.drawImage(tc,Math.round(sx-tm[2]*tk/2),Math.round(sy+16*z-tm[3]*tk));
+    }
+  } else if(t==='S'){
     if(isS(X-1,Y)&&isS(X,Y-1)&&isS(X-1,Y-1)){
       var sn=(h&1)?'school_a':'school_b',sc=spScaled(sn,64*z/SPM[sn][0],dim);
       if(sc)mx.drawImage(sc,Math.round(sx-sc.width/2),Math.round(sy+16*z+2*z-sc.height));
@@ -1636,7 +1651,7 @@ function drawMap(now){
       var o=S.objs[Y*N+X],atl=(o&&o.t==='H'&&o.bt&&ATL[o.bt])?ATL[o.bt]:null,gsp=SPREADY?groundSp(o,X,Y):null,spr=gsp?null:(atl?groundH(o,X,Y):spriteFor(o,X,Y)),key,iz=inZone(X,Y);
       if(!iz&&!gsp){key=atl?('GH'+(o.zn||'')+((X+Y)%2)):(o?o.sk:('G'+((X+Y)%2)));spr=dimSprite(key,spr);}
       if(gsp){spGround(gsp,sx,sy,z,!iz);spOver(o,X,Y,sx,sy,z,!iz,now);}else{mx.drawImage(spr,dx,dy,tw,th);if(SPREADY&&o&&o.dec&&SPDEC[o.dec.k])spOver(o,X,Y,sx,sy,z,!iz,now);}
-      if(atl)drawAtl(o,X,Y,sx,sy,z,!iz);
+      if(atl&&!(gsp&&o.bt==='mall'&&(trcGroup(o,X,Y)||X%8===4||Y%8===4)))drawAtl(o,X,Y,sx,sy,z,!iz);
       /* динамічні деталі */
       if(o){
         if(o.bt==='factory'&&!ATL.factory&&hashXY(X,Y)%2===0&&!reduce){var tq=now/450;for(i=0;i<3;i++){mx.fillStyle='rgba(115,115,125,'+(.65-i*.2)+')';mx.fillRect(Math.round(sx+9*z+Math.sin(tq+i)*2*z),Math.round(sy+(7.8-26-i*4-((tq*3+i*2)%6))*z),Math.max(1,Math.round(2*z)),Math.max(1,Math.round(2*z)));}}
