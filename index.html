@@ -749,7 +749,7 @@ function tryDeal(){
   } else {
     addLog(LOSE[(Math.random()*LOSE.length)|0],'bad');
     var lo=D.off;
-    if(lo.kind==='tender'||lo.kind==='auction'){
+    if(lo){
       floaters.push({X:lo.x,Y:lo.y,txt:'Програно',col:'#ff8a80',t0:performance.now()});
       addLog('«'+lo.title+'» ('+lo.name+') пішов до когось іншого. Заявка закрита.','bad');
       closeDeal();replaceOffer(lo);ui();
