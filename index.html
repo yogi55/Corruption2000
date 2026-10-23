@@ -925,19 +925,21 @@ function nextMonth(){
   }
   maybeAudit();
 }
-function arrestPrice(){return Math.max(300,Math.round(S.cash*.5));}
+function arrestFin(){return S.risk>=100}
+function arrestPrice(){return arrestFin()?Math.max(600,Math.round(S.cash*.8)):Math.max(300,Math.round(S.cash*.5));}
+function arrestOk(){return S.cash>=arrestPrice()&&(!arrestFin()||S.contacts>=15)}
 function openArrest(){
   S.warned=true;$('auWrap').hidden=false;
   var fin=S.risk>=100,pr=arrestPrice(),h='<h3 id="auTitle">'+(fin?'За вами приїхали':'Є інформація, що завтра прийдуть')+'</h3><div class="in"><p>'+(fin?'Двоє в цивільному вже у під\'їзді. Валіза зібрана наполовину.':'Друг із «органів» шепнув: підозра '+Math.round(S.risk)+'%. Завтра о шостій ранку. Що робиш?')+'</p>';
   h+='<div class="sec">Що робиш</div><div class="list">';
   h+='<button class="opt" data-arr="flee"><b>Чкурнути за кордон</b><small>Усе лишається тут: гроші, фірми, житло. З собою ~10% готівки (до 300 тис.). Починаєш життя з нуля під новим іменем.</small></button>';
-  if(!fin)h+='<button class="opt" data-arr="pay"'+(S.cash<pr?' disabled':'')+'><b>Відкупитись · '+pr+' тис.</b><small>Підозра падає до 70%. Іншого шансу не буде.</small></button>';
+  h+='<button class="opt" data-arr="pay"'+(arrestOk()?'':' disabled')+'><b>Відкупитись · '+pr+' тис.'+(fin?' + 10 зв\'язків':'')+'</b><small>'+(fin?'Двері вже відчиняють, тож дорого й потрібні зв\'язки (від 15, зараз '+S.contacts+'). Підозра падає до 75%.':'Підозра падає до 70%. Іншого шансу не буде.')+'</small></button>';
   h+='<button class="opt" data-arr="stay"><b>'+(fin?'Здатись':'Лишитись і ризикнути')+'</b><small>'+(fin?'Кінець гри.':'Нічого не змінюється. Дійде до 100% — кінець гри.')+'</small></button></div></div>';
   $('audit').innerHTML=h;var b=$('audit').querySelector('button');if(b)b.focus();
 }
 function resolveArrest(k){
   $('auWrap').hidden=true;
-  if(k==='pay'){var pr=arrestPrice();if(S.cash<pr)return;S.cash-=pr;S.risk=70;S.warned=false;addLog('Хтось «вирішив питання». Справу закрито за недостатністю доказів і достатністю суми.','good');ui();return;}
+  if(k==='pay'){var pr=arrestPrice(),fn=arrestFin();if(!arrestOk())return;S.cash-=pr;if(fn)S.contacts-=10;S.risk=fn?75:70;S.warned=false;addLog('Хтось «вирішив питання». Справу закрито за недостатністю доказів і достатністю суми.','good');ui();return;}
   if(k==='stay'){if(S.risk>=100)finish('caught');else ui();return;}
   var keep=Math.round(Math.min(300,S.cash*.1)),runs=(S.runs||0)+1,tab=S.tab;
   newGame();S.runs=runs;S.cash+=keep;S.tab=tab;S.speed=0;
