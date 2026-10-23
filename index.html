@@ -85,7 +85,7 @@ button:focus-visible{outline:2px dotted var(--ink);outline-offset:-5px}
 .pb{height:10px;background:#fff;border:1px solid var(--ink)}
 .pb i{display:block;height:100%;background:var(--ok)}
 .heat{font-size:11px;font-weight:700}.heat.hot{color:var(--warn)}
-#castle{display:block;width:100%;max-width:440px;margin:0 auto;image-rendering:pixelated;background:#7fb0d6;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+#castle{display:block;width:100%;max-width:100%;margin:0 auto;image-rendering:pixelated;background:#24445c;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
 #log{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 #log li{padding:4px 6px;background:#fff;border:1px solid var(--lo);font-size:12px}
 #log li.bad{background:#ffd9d4}#log li.good{background:#d4f2dc}
@@ -142,7 +142,7 @@ button:focus-visible{outline:2px dotted var(--ink);outline-offset:-5px}
     <div class="pane" id="pane-fops" role="tabpanel" hidden><div class="list" id="fops"></div></div>
     <div class="pane" id="pane-career" role="tabpanel" hidden><div id="career"></div></div>
     <div class="pane" id="pane-castle" role="tabpanel" hidden>
-      <canvas id="castle" width="144" height="112" aria-label="Будинок родини, який дорослішає за заробіток"></canvas>
+      <canvas id="castle" width="691" height="515" aria-label="План житла родини, яке дорослішає за заробіток"></canvas>
       <p id="mood" class="note"></p>
       <div class="list" id="upgrades"></div>
     </div>
@@ -202,19 +202,31 @@ var BRIBES=[0,.1,.2];
 var FOP_LIMIT=150;
 function fopLim(f){return f&&f.watch>0?FOP_LIMIT/2:FOP_LIMIT;}
 var FOP_NAMES=['ФОП Тітка Валя','ФОП Кум Степан','ФОП Сусід Борис','ФОП Теща','ФОП Шурін Едік'];
-var UPG=[
-  {k:'fence',n:'Триметровий паркан',c:300},
-  {k:'pool',n:'Басейн з підігрівом',c:600},
-  {k:'lions',n:'Леви біля ґанку',c:400},
-  {k:'toilet',n:'Золотий унітаз',c:500},
-  {k:'heli',n:'Вертолітний майданчик',c:1200}
+var HOMES=[
+  {n:'Хрущовка 2к',mv:0,rk:0,it:[
+    {k:'h0reno',n:'Євроремонт',c:20},{k:'h0tv',n:'Плазма на тумбі',c:25},{k:'h0ac',n:'Кондиціонер',c:20},{k:'h0coat',n:'Шуба на вішаку',c:30},{k:'h0fr',n:'Імпортний холодильник',c:25}]},
+  {n:'Новобудова 3к',mv:120,rk:0,it:[
+    {k:'h1a',n:'Кухня з островом',c:50},{k:'h1b',n:'Домашній кінотеатр',c:70},{k:'h1c',n:'Шафа-купе з дзеркалом',c:40},{k:'h1d',n:'Акваріум',c:60},{k:'h1e',n:'Тренажер',c:45}]},
+  {n:'Пентхаус',mv:350,rk:1,it:[
+    {k:'h2a',n:'Джакузі на терасі',c:150},{k:'h2b',n:'Бар',c:110},{k:'h2c',n:'Рояль',c:200},{k:'h2d',n:'Камін',c:130},{k:'h2e',n:'Панорамне вікно',c:180}]},
+  {n:'Будинок за містом',mv:800,rk:2,it:[
+    {k:'h3a',n:'Гараж на два авто',c:350},{k:'h3b',n:'Сауна',c:280},{k:'h3c',n:'Мангал і альтанка',c:200},{k:'h3d',n:'Басейн',c:450},{k:'h3e',n:'Кабінет із глобусом',c:250}]},
+  {n:'Маєток',mv:1800,rk:2,it:[
+    {k:'h4a',n:'Стайня',c:800},{k:'h4b',n:'Вертолітний майданчик',c:1200},{k:'h4c',n:'Фонтан',c:600},{k:'h4d',n:'Кінозал',c:900},{k:'h4e',n:'Винний льох',c:700}]},
+  {n:'Замок',mv:4000,rk:3,it:[
+    {k:'h5a',n:'Леви біля брами',c:1500},{k:'h5b',n:'Золотий унітаз',c:2000},{k:'h5c',n:'Тронна зала',c:3000},{k:'h5d',n:'Ров із крокодилами',c:2500},{k:'h5e',n:'Золотий трон',c:4000}]}
 ];
+var HART={0:{src:'assets/castle/plan_0.png',w:691,h:515,it:{
+  h0tv:{img:'tv',x:150,y:305,s:.19},h0ac:{img:'ac',x:100,y:200,s:.18},h0coat:{img:'coat',x:395,y:412,s:.18},h0fr:{img:'fridge',x:612,y:370,s:.15}}}};
+function allItems(){var l=[];HOMES.forEach(function(h){h.it.forEach(function(i){l.push(i)})});return l}
+function wealth(){var w=0;allItems().forEach(function(i){if(has(i.k))w+=i.c});return w}
+function homeOwned(h){return HOMES[h].it.filter(function(i){return has(i.k)}).length}
 var MOOD=[
   'Родина ще в двокімнатній. Дружина вже склала список.',
-  'Фундамент є. Сусіди питають, що це будується.',
-  'Діти питають, звідки гроші. Їм кажуть: «Бабуся».',
+  'Діти вперше мають власні кімнати й одразу вимагають третю.',
+  'З тераси видно ввесь район. І він теж бачить тебе.',
+  'Сусіди питають, на яку зарплату це збудовано. Відповідь: «бабусі».',
   'Це вже не дім, це заява про наміри.',
-  'З вертольотного майданчика добре видно, як хтось знімає це на телефон.',
   'Усе готово. Тільки золотий унітаз трохи холодний.'
 ];
 var EL={
@@ -628,7 +640,7 @@ function wxOf(X,Y){return (X-Y)*16}
 function wyOf(X,Y){return (X+Y)*8}
 function newGame(){
   S={speed:0,tick:0,month:1,cash:70,risk:6,contacts:8,fame:0,rank:0,angry:0,inflate:0,rt:50,
-     objs:[],offers:[],pending:[],castle:[],log:[],over:false,tab:'offers',zoom:1,cam:{x:0,y:0},
+     objs:[],offers:[],pending:[],castle:[],home:0,log:[],over:false,tab:'offers',zoom:1,cam:{x:0,y:0},
      audits:[],devs:0,eq:{},acc:0,taxDebt:0,lastTax:null,sites:[],stakes:[],events:[],siteId:0,lastWash:-9,annual:[],contracts:[],dirty:false,cleanN:0,charM:0,lowM:0,openCd:0,notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
   S.objs=genWorld();
   cars=genCars();
@@ -865,7 +877,7 @@ function nextMonth(){
     if(f.isCo){if(Math.random()<Math.min(.3,f.heat*.07))S.audits.push({kind:'co',f:f,fine:Math.max(40,Math.round(f.lastUsed*.1+S.inflate*20))});}
     else if(Math.random()<Math.min(.45,f.heat*.11))S.audits.push({kind:'fop',f:f,fine:Math.max(15,Math.round(f.lastUsed*.2))});
   }
-  if(S.castle.length>=2&&Math.random()<Math.min(.3,.05*S.castle.length+(S.rank>=2?.05:0)))S.audits.push({kind:'life',f:null,fine:S.castle.length*60});
+  if(S.castle.length>=2&&Math.random()<Math.min(.3,.04*S.castle.length+(S.rank>=2?.05:0)))S.audits.push({kind:'life',f:null,fine:Math.max(60,Math.round(wealth()*.05))});
   S.audits=S.audits.slice(0,1);
   if(S.rank>=3&&S.audits.length){if(Math.random()<.4)S.audits=[];else S.audits.forEach(function(a){a.fine=Math.round(a.fine*.5)});}
   if(bad&&Math.random()<Math.min(.55,bad*.14)){S.risk=clamp(S.risk+9,0,100);addLog(Math.random()<.5?'Журналіст зняв відео про твій «ремонт»: яма вже там, де був асфальт.':'Журналіст порахував: лавка в кошторисі коштує як мотоцикл, а стоїть як табуретка.','bad');}
@@ -891,7 +903,7 @@ function nextMonth(){
   if(S.lowM>0){dec+=10;S.lowM--;if(!S.lowM)addLog('Ти виринув із «відпустки». Усі вважають, що ти був на реабілітації.','');}
   if(S.openCd>0)S.openCd--;
   S.dirty=false;
-  S.risk=clamp(S.risk-dec+S.castle.length*1.2,0,100);
+  S.risk=clamp(S.risk-dec+Math.min(6,S.castle.length*.3),0,100);
   if(S.rank>=3&&S.risk>85&&Math.random()<.15){S.rank=2;S.risk=clamp(S.risk-15,0,100);addLog('Депутатський мандат складено «за власним бажанням». Недоторканність закінчилась.','bad');}
   citySites();genHappenings();
   if(S.lowM>0)S.offers=[];else genOffers();
@@ -909,18 +921,18 @@ function check(){
   if(S.over)return;
   if(S.risk>=100)return finish('caught');
   if(S.month>8&&S.rt<6)return finish('riot');
-  if(S.castle.length===UPG.length)return finish('win');
+  if(S.home===HOMES.length-1&&homeOwned(S.home)===HOMES[S.home].it.length)return finish('win');
 }
 function finish(k){
   S.over=true;try{localStorage.removeItem(SAVEK);}catch(e){}$('auWrap').hidden=true;closeDeal();$('elWrap').hidden=true;
   var T={
     caught:['За вами приїхали','Журналісти, перевірки й чиїсь діти з телефонами зробили свою справу. Ухвалу почали читати з золотого унітаза.'],
     riot:['Район повстав','Настрій упав майже до нуля. Люди вийшли на вулиці, які ти так і не полатав.'],
-    win:['Пшонок-замок збудовано','Паркан, леви, басейн, золотий унітаз і вертоліт. Район у ямах, родина щаслива. Сумнівно, що надовго.'],
+    win:['Пшонок-замок збудовано','Леви, трон, ров із крокодилами й золотий унітаз. Район у ямах, родина щаслива. Сумнівно, що надовго.'],
     flee:['Валіза зібрана','Ти в аеропорту з готівкою. Район лишився з ямами, а замок так і не добудований.']
   }[k];
   $('endTitle').textContent=T[0];$('endText').textContent=T[1];
-  $('endScore').textContent='Місяців: '+S.month+' · Ранг: '+RANKS[S.rank]+' · Готівка: '+Math.round(S.cash)+' тис. · Замок: '+S.castle.length+'/'+UPG.length;
+  $('endScore').textContent='Місяців: '+S.month+' · Ранг: '+RANKS[S.rank]+' · Готівка: '+Math.round(S.cash)+' тис. · Житло: '+HOMES[S.home].n+', багатств: '+S.castle.length;
   $('end').hidden=false;$('again').focus();ui();
 }
 
@@ -1116,13 +1128,18 @@ function ui(){
   } else ch+='<p class="note">Мандат є. Тепер доступні МАФ-аукціони й забудова пустирів по всьому місту. Переобрання кожні 12 місяців.</p>';
   ch+='<div class="sec">Дії</div><div class="list">'+actList().map(function(a){return '<button class="btn" data-act="'+a.k+'"'+(S.over||!a.ok?' disabled':'')+'>'+a.t+'</button>';}).join('')+'<button class="btn" data-act="flee"'+(S.over||S.cash<FLEE_COST?' disabled':'')+'>Втекти за кордон · '+FLEE_COST+' тис.</button></div>';
   $('career').innerHTML=ch;
-  var uh='';
-  UPG.forEach(function(u){
+  var uh='',H=HOMES[S.home],nx=HOMES[S.home+1],ow=homeOwned(S.home);
+  uh+='<div class="sec">'+H.n+' · багатств '+ow+'/'+H.it.length+'</div>';
+  H.it.forEach(function(u){
     var own=has(u.k);
     uh+='<button class="up'+(own?' own':'')+'" data-up="'+u.k+'"'+((own||S.cash<u.c||S.over)?' disabled':'')+'><b>'+u.n+'</b><small>'+(own?'є':u.c+' тис.')+'</small></button>';
   });
+  if(nx){
+    var why=ow<3?'Спершу купи 3 багатства ('+ow+'/3)':(S.rank<nx.rk?'Потрібен ранг: '+RANKS[nx.rk]:(S.cash<nx.mv?'Не вистачає готівки':''));
+    uh+='<button class="btn" data-move="1" style="grid-column:1/-1"'+((why||S.over)?' disabled':'')+'>Переїхати: '+nx.n+' · '+nx.mv+' тис.'+(why?' ('+why+')':'')+'</button>';
+  }
   $('upgrades').innerHTML=uh;
-  $('mood').textContent=MOOD[S.castle.length];
+  $('mood').textContent=MOOD[S.home];
   $('log').innerHTML=S.log.map(function(l){return '<li class="'+l.k+'">'+l.t+'</li>';}).join('');
 }
 
@@ -1155,11 +1172,18 @@ $('career').addEventListener('click',function(e){
   if(a.dataset.act==='flee')doFlee();else doAct(a.dataset.act);
 });
 $('upgrades').addEventListener('click',function(e){
-  var b=e.target.closest('[data-up]');if(!b||S.over)return;
-  var u=UPG.filter(function(x){return x.k===b.dataset.up;})[0];
+  if(S.over)return;
+  if(e.target.closest('[data-move]')){
+    var nx=HOMES[S.home+1];if(!nx||homeOwned(S.home)<3||S.cash<nx.mv||S.rank<nx.rk)return;
+    S.cash-=nx.mv;S.home++;S.risk=clamp(S.risk+5,0,100);
+    addLog('Переїзд: '+nx.n+'. Старі меблі лишились сусідам, а плазма поїхала з тобою.','');
+    check();ui();return;
+  }
+  var b=e.target.closest('[data-up]');if(!b)return;
+  var u=HOMES[S.home].it.filter(function(x){return x.k===b.dataset.up;})[0];
   if(!u||has(u.k)||S.cash<u.c)return;
-  S.cash-=u.c;S.castle.push(u.k);S.risk=clamp(S.risk+3,0,100);
-  addLog('Замок: '+u.n.toLowerCase()+'. Сусіди помітили.','');
+  S.cash-=u.c;S.castle.push(u.k);S.risk=clamp(S.risk+2+S.home*1.5,0,100);
+  addLog('Придбано: '+u.n.toLowerCase()+'. Сусіди помітили.','');
   check();ui();
 });
 $('deal').addEventListener('click',function(e){
@@ -1883,50 +1907,32 @@ function fig(x,y,col,mood){
   G.fillStyle='#202020';G.fillRect(cxp-1,cyp-1,1,1);G.fillRect(cxp+1,cyp-1,1,1);
   if(mood>0){G.fillRect(cxp-1,cyp+1,3,1);}else if(mood<0){G.fillRect(cxp,cyp+1,1,1);}else{G.fillRect(cxp-1,cyp+1,2,1);}
 }
+var CIMG={},CPL={};
+function cimg(src){var i=CIMG[src];if(!i){i=new Image();i.src=src;i.onload=function(){CPL={}};CIMG[src]=i;}return i.complete&&i.naturalWidth?i:null;}
+function planCanvas(art,reno){
+  var key=art.src+(reno?'r':'');if(CPL[key])return CPL[key];
+  var im=cimg(art.src);if(!im)return null;
+  var c=mkCanvas(art.w,art.h),g=c.getContext('2d');
+  if(reno)g.filter='saturate(30%) brightness(118%)';
+  g.drawImage(im,0,0);g.filter='none';
+  CPL[key]=c;return c;
+}
 function drawCastle(now){
-  G=cx2;cx2.clearRect(0,0,144,112);
-  cx2.fillStyle='#7fb0d6';cx2.fillRect(0,0,144,112);
-  V={ox:72,oy:38,kx:20,ky:10,zs:.43,rs:.43};
-  poly([P(0,3,0),P(3,3,0),P(3,3,-14),P(0,3,-14)],'#7a5033');
-  poly([P(3,0,0),P(3,3,0),P(3,3,-14),P(3,0,-14)],'#5f3c25');
-  for(var X=0;X<3;X++)for(var Y=0;Y<3;Y++)poly([P(X,Y,0),P(X+1,Y,0),P(X+1,Y+1,0),P(X,Y+1,0)],((X+Y)%2)?'#6fa352':'#679b4c',false);
-  if(has('pool')){
-    poly([P(.18,1.62,0),P(1.02,1.62,0),P(1.02,2.82,0),P(.18,2.82,0)],'#e6ecf2');
-    poly([P(.28,1.72,0),P(.92,1.72,0),P(.92,2.72,0),P(.28,2.72,0)],'#4fa8e0',false);
-    var w=reduce?0:Math.sin(now/500)*.05;
-    pline([P(.4,1.95+w,0),P(.8,1.95+w,0)],'#cfeeff');pline([P(.4,2.3-w,0),P(.8,2.3-w,0)],'#cfeeff');
+  var art=HART[S.home],g=cx2;
+  if(art){if(cc.width!==art.w||cc.height!==art.h){cc.width=art.w;cc.height=art.h;}}
+  else if(cc.width!==691||cc.height!==515){cc.width=691;cc.height=515;}
+  g.clearRect(0,0,cc.width,cc.height);g.fillStyle='#24445c';g.fillRect(0,0,cc.width,cc.height);
+  if(!art){
+    g.fillStyle='#b8c8d4';g.font='bold 22px monospace';g.textAlign='center';
+    g.fillText('План «'+HOMES[S.home].n+'» ще малюється',cc.width/2,cc.height/2-8);
+    g.font='16px monospace';g.fillText('Багатства вже можна купувати зі списку нижче',cc.width/2,cc.height/2+22);
+    g.textAlign='start';return;
   }
-  if(has('heli')){
-    poly([P(2.05,.12,0),P(2.88,.12,0),P(2.88,1.02,0),P(2.05,1.02,0)],'#70737f',false);
-    circ(2.46,.57,.36,0,'#8d90a0','#ffffff');
-    pline([P(2.32,.4,0),P(2.32,.74,0)],'#ffd54f');pline([P(2.6,.4,0),P(2.6,.74,0)],'#ffd54f');pline([P(2.32,.57,0),P(2.6,.57,0)],'#ffd54f');
-  }
-  if(has('fence')){box(.02,.02,2.98,.12,0,17,'#b8604a');box(.02,.02,.12,2.98,0,17,'#b8604a');}
-  box(.95,.95,2.05,2.05,0,46,'#e0b184');
-  rectX(1.2,1.45,2.05,10,24,'#fff1b8');rectX(1.6,1.85,2.05,10,24,'#fff1b8');rectY(1.1,1.3,2.05,10,26,'#fff1b8');
-  box(1.4,2.06,1.62,2.1,0,20,'#7a4a30');
-  var ap=P(1.5,1.5,46+28);
-  poly([P(2.15,.85,46),P(2.15,2.15,46),ap],'#8d2f3a');
-  poly([P(.85,2.15,46),P(2.15,2.15,46),ap],'#b23a48');
-  box(1.7,1.0,1.9,1.2,46,76,'#8d6e63');
-  if(has('toilet')){
-    box(1.4,1.4,1.6,1.6,70,80,'#ffd54f');ball(1.5,1.5,86,5,'#ffe27a');
-    var sp=reduce?0:(Math.floor(now/300)%2),p0=P(1.5,1.5,100);
-    G.fillStyle='#fff7b0';G.fillRect(Math.round(p0[0])-2,Math.round(p0[1])-sp,5,1);G.fillRect(Math.round(p0[0]),Math.round(p0[1])-2-sp,1,5);
-  }
-  if(has('heli')){
-    box(2.35,.45,2.65,.75,0,9,'#d43a34');
-    var rot=reduce?0:Math.floor(now/90)%2,c0=P(2.5,.6,15);
-    if(rot)bl(c0[0]-7,c0[1],c0[0]+7,c0[1],'#202020');else bl(c0[0]-6,c0[1]-1,c0[0]+6,c0[1]+1,'#202020');
-  }
-  if(has('fence')){box(.02,2.88,2.98,2.98,0,17,'#b8604a');box(2.88,.02,2.98,2.88,0,17,'#b8604a');}
-  if(has('lions')){
-    [[1.05,2.4],[1.85,2.4]].forEach(function(l){
-      box(l[0]-.1,l[1]-.1,l[0]+.1,l[1]+.1,0,8,'#c5ced2');box(l[0]-.08,l[1]-.08,l[0]+.08,l[1]+.08,8,15,'#e8a82a');ball(l[0],l[1],21,6.5,'#f0bc3c');
-    });
-  }
-  var n=S.castle.length,m=n>=4?1:(n>=2?0:-1);
-  fig(.55,2.5,'#3b6fd0',m);fig(.75,2.62,'#d85a82',m);
+  g.imageSmoothingEnabled=false;
+  var pc=planCanvas(art,S.home===0&&has('h0reno'));if(pc)g.drawImage(pc,0,0);
+  var l=[],k;for(k in art.it)if(has(k))l.push(art.it[k]);
+  l.sort(function(a,b){return a.y-b.y});
+  l.forEach(function(o){var im=cimg('assets/castle/i'+S.home+'_'+o.img+'.png');if(!im)return;var w=Math.round(im.naturalWidth*o.s),h=Math.round(im.naturalHeight*o.s);g.drawImage(im,Math.round(o.x-w/2),Math.round(o.y-h),w,h);});
 }
 
 /* ================= ЧАС ТА ЦИКЛ ================= */
@@ -2035,7 +2041,7 @@ function loadGame(){
     var j=localStorage.getItem(SAVEK);if(!j)return false;
     var t=JSON.parse(j);if(!t||!t.objs||t.objs.length!==N*N||!t.fops||!t.fops.length)return false;
     t.audits=(t.audits||[]).map(function(a){return {kind:a.kind,fine:a.fine,f:a.fi>=0?t.fops[a.fi]:null};});
-    t.speed=0;t.over=false;S=t;cars=genCars();
+    t.speed=0;t.over=false;t.home=t.home||0;S=t;cars=genCars();
     $('end').hidden=true;$('auWrap').hidden=true;$('dealWrap').hidden=true;$('elWrap').hidden=true;
     dirtyMini=true;updateRating();return true;
   }catch(e){return false;}
