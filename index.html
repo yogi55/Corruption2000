@@ -617,6 +617,7 @@ function genOffers(){
   var cand=[],spec=[],decs=[],m=mult(),r=ZR[S.rank],x0=Math.max(0,HOME.x-r),x1=Math.min(N-1,HOME.x+r),y0=Math.max(0,HOME.y-r),y1=Math.min(N-1,HOME.y+r),x,y,o,t,off;
   for(y=y0;y<=y1;y++)for(x=x0;x<=x1;x++){
     o=S.objs[y*N+x];if(!o||o.site||!inZone(x,y))continue;
+    if(S.lost&&S.lost[x+','+y]>S.month)continue;
     t=o.t;off=null;
     if(t==='K'){if(S.rank>=2&&!o.owned)off={x:x,y:y,t:'K',budget:60,price:20,kind:'auction',comp:rnd(.05,.2),title:'Аукціон на МАФ'};}
     else if(t==='L'){if(S.rank>=2)off={x:x,y:y,t:'L',dev:'lot',budget:r5((S.rank>=3?2200:900)*rnd(.9,1.1)),kind:'tender',comp:rnd(.08,.22),title:S.rank>=3?'Забудова пустиря (ЖК)':'Пайова участь: ЖК на пустирі'};}
@@ -733,11 +734,26 @@ function renderDeal(){
   h+='</div>';
   $('deal').innerHTML=h;
 }
+function replaceOffer(lost){
+  S.lost=S.lost||{};S.lost[lost.x+','+lost.y]=S.month+4;
+  var keep=S.offers.filter(function(o){return o!==lost});
+  genOffers();var fresh=S.offers;S.offers=keep;
+  var free=fresh.filter(function(f){return !keep.some(function(k){return k.x===f.x&&k.y===f.y})});
+  var same=free.filter(function(f){return f.kind===lost.kind}),pool=same.length?same:free;
+  if(pool.length){var nw=pool[(Math.random()*pool.length)|0];S.offers.push(nw);addLog('Зате десь з\'явилась нова: «'+nw.title+'», '+nw.name+'.','');}
+  dirtyMini=true;
+}
 function tryDeal(){
   if(Math.random()<chance()){
     D.step=2;addLog('Домовились: «'+D.off.title+'», '+D.off.name+'.','good');renderDeal();ui();
   } else {
-    addLog(LOSE[(Math.random()*LOSE.length)|0],'bad');closeDeal();ui();
+    addLog(LOSE[(Math.random()*LOSE.length)|0],'bad');
+    var lo=D.off;
+    if(lo.kind==='tender'||lo.kind==='auction'){
+      floaters.push({X:lo.x,Y:lo.y,txt:'Програно',col:'#ff8a80',t0:performance.now()});
+      addLog('«'+lo.title+'» ('+lo.name+') пішов до когось іншого. Заявка закрита.','bad');
+      closeDeal();replaceOffer(lo);ui();
+    } else {closeDeal();ui();}
   }
 }
 function signDeal(){
