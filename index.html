@@ -1540,6 +1540,7 @@ var ATL={};
 function stageOf(c){return c>=68?0:(c>=48?1:(c>=22?2:3))}
 function groundH(o,X,Y){return getSprite('GH'+(o.zn||'')+((X+Y)%2),function(){groundTile(zg(o,X,Y,GR[(X+Y)%2]),hashXY(X,Y));});}
 function drawAtl(o,X,Y,sx,sy,z,dim){
+  if(SPREADY&&o.bt==='centre'&&hashXY(X*7+3,Y*11+1)%8===0){spObj(['zhk_blue','zhk_green','zhk_red'][hashXY(Y*3+1,X)%3],sx,sy,z,dim,300,.5,.5,1.08);return;}
   var a=ATL[o.bt],m=a.m,L=m.st[stageOf(o.c)],idx=L[hashXY(X,Y)%L.length],k=32*z/128,dw=128*k,dh=m.h[idx]*k;
   mx.imageSmoothingEnabled=true;mx.imageSmoothingQuality='high';
   var fl=(o.bt==='centre'||o.bt==='biz'||o.bt==='panel')&&hashXY(Y*5+1,X*3+2)%3===0;
