@@ -203,10 +203,11 @@ var FOP_LIMIT=150;
 function fopLim(f){return f&&f.watch>0?FOP_LIMIT/2:FOP_LIMIT;}
 var FOP_NAMES=['ФОП Тітка Валя','ФОП Кум Степан','ФОП Сусід Борис','ФОП Теща','ФОП Шурін Едік'];
 var HOMES=[
-  {n:'Хрущовка 2к',mv:0,rk:0,it:[
-    {k:'h0reno',n:'Євроремонт',c:20},{k:'h0tv',n:'Плазма на тумбі',c:25},{k:'h0ac',n:'Кондиціонер',c:20},{k:'h0coat',n:'Шуба на вішаку',c:30},{k:'h0fr',n:'Імпортний холодильник',c:25}]},
+  {n:'Хрущовка 2к',mv:0,rk:0,need:5,it:[
+    {k:'h0reno',n:'Євроремонт',c:20},{k:'h0tv',n:'Плазма на тумбі',c:25},{k:'h0ac',n:'Кондиціонер',c:20},{k:'h0coat',n:'Шуба на вішаку',c:30},{k:'h0fr',n:'Імпортний холодильник',c:25},
+    {k:'h0isl',n:'Кухня з островом',c:45,req:'h0reno'},{k:'h0cin',n:'Домашній кінотеатр',c:60,req:'h0reno'},{k:'h0wr',n:'Шафа-купе з дзеркалом',c:40,req:'h0reno'},{k:'h0aq',n:'Акваріум',c:55,req:'h0reno'},{k:'h0gym',n:'Тренажер',c:45,req:'h0reno'}]},
   {n:'Новобудова 3к',mv:120,rk:0,it:[
-    {k:'h1a',n:'Кухня з островом',c:50},{k:'h1b',n:'Домашній кінотеатр',c:70},{k:'h1c',n:'Шафа-купе з дзеркалом',c:40},{k:'h1d',n:'Акваріум',c:60},{k:'h1e',n:'Тренажер',c:45}]},
+    {k:'h1a',n:'Дизайнерський диван',c:50},{k:'h1b',n:'Мармурова ванна',c:70},{k:'h1c',n:'Розумний дім',c:40},{k:'h1d',n:'Картина з аукціону',c:60},{k:'h1e',n:'Гардеробна',c:45}]},
   {n:'Пентхаус',mv:350,rk:1,it:[
     {k:'h2a',n:'Джакузі на терасі',c:150},{k:'h2b',n:'Бар',c:110},{k:'h2c',n:'Рояль',c:200},{k:'h2d',n:'Камін',c:130},{k:'h2e',n:'Панорамне вікно',c:180}]},
   {n:'Будинок за містом',mv:800,rk:2,it:[
@@ -217,7 +218,8 @@ var HOMES=[
     {k:'h5a',n:'Леви біля брами',c:1500},{k:'h5b',n:'Золотий унітаз',c:2000},{k:'h5c',n:'Тронна зала',c:3000},{k:'h5d',n:'Ров із крокодилами',c:2500},{k:'h5e',n:'Золотий трон',c:4000}]}
 ];
 var HART={0:{src:'assets/castle/plan_0.png',r:'assets/castle/plan_0r.png',w:691,h:515,it:{
-  h0tv:{img:'tv',x:150,y:305,s:.19},h0ac:{img:'ac',x:100,y:200,s:.18,r:[340,150]},h0coat:{img:'coat',x:395,y:412,s:.18},h0fr:{img:'fridge',x:612,y:370,s:.15,r:[560,350]}}}};
+  h0tv:{img:'tv',x:150,y:305,s:.19},h0ac:{img:'ac',x:100,y:200,s:.18,r:[340,150]},h0coat:{img:'coat',x:395,y:412,s:.18},h0fr:{img:'fridge',x:612,y:370,s:.15,r:[185,340]},
+  h0isl:{img:'isl',x:112,y:388,s:.16},h0cin:{img:'cin',x:585,y:352,s:.16},h0wr:{img:'wr',x:648,y:322,s:.15},h0aq:{img:'aq',x:300,y:465,s:.16},h0gym:{img:'gym',x:445,y:448,s:.15}}}};
 function allItems(){var l=[];HOMES.forEach(function(h){h.it.forEach(function(i){l.push(i)})});return l}
 function wealth(){var w=0;allItems().forEach(function(i){if(has(i.k))w+=i.c});return w}
 function homeOwned(h){return HOMES[h].it.filter(function(i){return has(i.k)}).length}
@@ -1132,10 +1134,11 @@ function ui(){
   uh+='<div class="sec">'+H.n+' · багатств '+ow+'/'+H.it.length+'</div>';
   H.it.forEach(function(u){
     var own=has(u.k);
-    uh+='<button class="up'+(own?' own':'')+'" data-up="'+u.k+'"'+((own||S.cash<u.c||S.over)?' disabled':'')+'><b>'+u.n+'</b><small>'+(own?'є':u.c+' тис.')+'</small></button>';
+    var lk=u.req&&!has(u.req);
+    uh+='<button class="up'+(own?' own':'')+'" data-up="'+u.k+'"'+((own||lk||S.cash<u.c||S.over)?' disabled':'')+'><b>'+u.n+'</b><small>'+(own?'є':(lk?'після євроремонту':u.c+' тис.'))+'</small></button>';
   });
   if(nx){
-    var why=ow<3?'Спершу купи 3 багатства ('+ow+'/3)':(S.rank<nx.rk?'Потрібен ранг: '+RANKS[nx.rk]:(S.cash<nx.mv?'Не вистачає готівки':''));
+    var nd=H.need||3,why=ow<nd?'Спершу купи '+nd+' багатств ('+ow+'/'+nd+')':(S.rank<nx.rk?'Потрібен ранг: '+RANKS[nx.rk]:(S.cash<nx.mv?'Не вистачає готівки':''));
     uh+='<button class="btn" data-move="1" style="grid-column:1/-1"'+((why||S.over)?' disabled':'')+'>Переїхати: '+nx.n+' · '+nx.mv+' тис.'+(why?' ('+why+')':'')+'</button>';
   }
   $('upgrades').innerHTML=uh;
@@ -1174,14 +1177,14 @@ $('career').addEventListener('click',function(e){
 $('upgrades').addEventListener('click',function(e){
   if(S.over)return;
   if(e.target.closest('[data-move]')){
-    var nx=HOMES[S.home+1];if(!nx||homeOwned(S.home)<3||S.cash<nx.mv||S.rank<nx.rk)return;
+    var nx=HOMES[S.home+1];if(!nx||homeOwned(S.home)<(HOMES[S.home].need||3)||S.cash<nx.mv||S.rank<nx.rk)return;
     S.cash-=nx.mv;S.home++;S.risk=clamp(S.risk+5,0,100);
     addLog('Переїзд: '+nx.n+'. Старі меблі лишились сусідам, а плазма поїхала з тобою.','');
     check();ui();return;
   }
   var b=e.target.closest('[data-up]');if(!b)return;
   var u=HOMES[S.home].it.filter(function(x){return x.k===b.dataset.up;})[0];
-  if(!u||has(u.k)||S.cash<u.c)return;
+  if(!u||has(u.k)||S.cash<u.c||(u.req&&!has(u.req)))return;
   S.cash-=u.c;S.castle.push(u.k);S.risk=clamp(S.risk+2+S.home*1.5,0,100);
   addLog('Придбано: '+u.n.toLowerCase()+'. Сусіди помітили.','');
   check();ui();
