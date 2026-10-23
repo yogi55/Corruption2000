@@ -394,7 +394,7 @@ var BTD={
   mall:{title:'Благоустрій території ТЦ',k:2.5,min:2,real:.55,h:22}
 };
 var ZTPL={
-  centre:[['HHHHHHH','HHHHHHH','HHYYYHH','HHYPYHH','HHYYYHH','HHHHHHH','HHHHHHH'],['HHHHHHH','HHHYHHH','HHYYYHH','HYYPYYH','HHYYYHH','HHHYHHH','HHHHHHH'],['HHHHHHH','HYYYYHH','HYPPYHH','HYPPYHH','HYYKYHH','HHHYHHH','HHHHHHH']],
+  centre:[['HHHYHHH','HYYYYYH','HYPPYYH','HYYYYYH','HYKYYYH','HYYYYYH','HHYHHHH'],['HHHHYHH','HYYYYYH','HYPPYYH','HYYYYHH','HHYYYYH','HYYKYYH','HHHYHHH'],['HHYHHHH','HYYYYYH','HYHHYYH','HYHHYPH','HYYYYYH','HYYKYYH','HHHHYHH'],['HHHYHHH','HYYYYHH','HYPYYYH','HYYYPYH','HHYYYYH','HYYKYYH','HHYHHHH']],
   business:[['HHYHHYH','HHYHHYH','YYYYYYY','HHPPPHH','HHPPPHH','YYYYYYY','HHYHHYH']],
   sleeper:[['HHHYHHH','HYYYYYH','YYSSPPY','YYSSPPY','HYYPPYH','HYYYYYH','HHHYHHH'],['HHYYHHY','HHYYHHY','YYYPPYY','HHYPPYH','HHYYYYH','YYYYHHH','PPYYHHH']],
   industrial:[['HHHHYHH','HHHHYHH','YYYYYYY','HHHHYLL','HHHHYLL','YYYYYYY','HHYYYHH']],
@@ -412,7 +412,7 @@ function zoneOf(cx,cy,r){
   return r<.1?'mall':(r<.2?'private':'sleeper');
 }
 function btFor(z,h){
-  if(z==='centre')return h%9===0?'biz':'centre';
+  if(z==='centre')return 'centre';
   if(z==='business')return h%3===0?'centre':'biz';
   if(z==='sleeper')return 'panel';
   if(z==='industrial')return 'factory';
@@ -2016,7 +2016,7 @@ function titleShow(panel){
     $('stRd').onchange=function(){reduce=this.checked;window.__rd=this.checked;savePrefs();};
   }
 }
-var SAVEK='k2000s';
+var SAVEK='k2000s2';
 function saveGame(){
   if(!S||S.over||!STARTED)return;
   try{
