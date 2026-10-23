@@ -397,6 +397,97 @@ function bName(o,x,y){
     default:return 'буд. '+n;
   }
 }
+var SITE_OWN=['ТОВ «БудІнвест»','КП «Місто-сервіс»','ПП «Ремонт-плюс»','ТОВ «Київ-Девелопмент»','ТОВ «Стройтрест-2000»','ТОВ «Нова столиця»'];
+var CLIENTS=['знайомий знайомого з Борщагівки','двоюрідний брат депутата','«бізнесмен із Лівого берега»','директор «чужого» КП','колишній однокласник, який «піднявся»'];
+function siteTitle(st){return st.kind==='build'?'Забудова пустиря: ЖК':'Реконструкція: '+st.name}
+function citySites(){
+  var live=[],i,o;
+  S.sites.forEach(function(st){
+    st.left--;
+    if(st.left>0){live.push(st);return;}
+    o=S.objs[st.y*N+st.x];if(o)o.site=null;
+    var fail=Math.random()<st.risk;
+    if(fail){
+      S.stakes=S.stakes.filter(function(k){
+        if(k.id!==st.id)return true;
+        S.risk=clamp(S.risk+(k.kind==='kick'?8:4),0,100);return false;
+      });
+      addLog('Об\'єкт «'+siteTitle(st)+'» заморозили: прокуратура. Гроші, вкладені в «делюгу», пропали.','bad');
+    } else {
+      if(o){
+        if(st.kind==='build'){o.t='N';o.c=100;o.dec=null;}
+        else{o.c=88;o.q=.85;o.by='city';}
+        o.sk=null;
+      }
+      var got=0;
+      S.stakes=S.stakes.filter(function(k){if(k.id!==st.id)return true;got+=k.ret;S.fame+=1;return false;});
+      if(got){S.cash+=got;addLog('Об\'єкт «'+siteTitle(st)+'» здано. Твоя частка: +'+got+' тис.','good');}
+      else addLog('У місті здали об\'єкт: «'+siteTitle(st)+'». Тебе, звісно, не покликали.','');
+    }
+    dirtyMini=true;
+  });
+  S.sites=live;
+  var tries=0,want=(Math.random()<.8?1:0)+(Math.random()<.4?1:0);
+  while(S.sites.length<8&&want>0&&tries++<60){
+    var x=(Math.random()*N)|0,y=(Math.random()*N)|0;o=S.objs[y*N+x];
+    if(!o||o.site||o.owned||o.dev||offerAt(x,y))continue;
+    var kind=null;
+    if(o.t==='L')kind='build';else if('HSPRY'.indexOf(o.t)>=0&&o.c<62)kind='recon';
+    if(!kind)continue;
+    var m=mult(),st={id:++S.siteId,x:x,y:y,kind:kind,name:o.name,owner:SITE_OWN[(Math.random()*SITE_OWN.length)|0],
+      budget:r5((kind==='build'?rnd(700,1500):rnd(140,380))*m),left:kind==='build'?((Math.random()*5)|0)+5:((Math.random()*4)|0)+2,risk:rnd(.1,.35),invited:false};
+    o.site=st;S.sites.push(st);want--;
+  }
+}
+function genHappenings(){
+  if(S.month<2)return;
+  var cand=S.sites.filter(function(st){return !st.invited&&st.left>=2});
+  if(cand.length&&Math.random()<Math.min(.45,.12+S.contacts*.004)){
+    var st=cand[(Math.random()*cand.length)|0];st.invited=true;S.events.push({kind:'invite',st:st});
+  }
+  if(S.month>=3&&S.month-S.lastWash>=3&&Math.random()<Math.min(.35,.22+S.contacts*.002)){
+    var X=S.rank===0?rnd(50,120):(S.rank===1?rnd(120,400):rnd(300,900));
+    S.lastWash=S.month;S.events.push({kind:'wash',x:Math.round(X/5)*5,pct:Math.round(rnd(.08,.15)*100)/100,who:CLIENTS[(Math.random()*CLIENTS.length)|0]});
+  }
+}
+function evOk(f,X){return f.isCo||f.used+X<=FOP_LIMIT}
+function openEvent(){
+  var e=S.events[0];if(!e)return;
+  $('auWrap').hidden=false;var h='';
+  if(e.kind==='invite'){
+    var st=e.st,sm=Math.round(st.budget*.08),lg=Math.round(st.budget*.2),kc=Math.round(st.budget*.06);
+    h='<h3 id="auTitle">Запрошення в «делюгу»</h3><div class="in"><p><b>'+siteTitle(st)+'</b>'+(st.kind==='build'?'':' ('+st.name+')')+'</p><p>Знайомий із забудовника «'+st.owner+'» шепоче: об\'єкт на '+st.budget+' тис., будівництво ще '+st.left+' міс. Місце в «делюзі» є, але ризик провалу ≈ '+Math.round(st.risk*100)+'%.</p><div class="list">';
+    h+='<button class="opt" data-ev="sm"'+(S.cash<sm?' disabled':'')+'><b>Невеликий пай · '+sm+' тис.</b><small>Повернеться '+Math.round(sm*1.4)+' тис. після здачі. Підозра +3.</small></button>';
+    h+='<button class="opt" data-ev="lg"'+(S.cash<lg?' disabled':'')+'><b>Великий пай · '+lg+' тис.</b><small>Повернеться '+Math.round(lg*1.6)+' тис. після здачі. Підозра +5.</small></button>';
+    h+='<button class="opt" data-ev="kick"><b>Закрити «дозволи»: частка '+kc+' тис.</b><small>Вкладати нічого, отримаєш при здачі. Підозра +5, зв\'язки +2.</small></button>';
+    h+='<button class="opt" data-ev="no"><b>Відмовитись</b><small>Знайомий образиться з імовірністю 30% (зв\'язки −1).</small></button></div></div>';
+  } else {
+    var fee=Math.round(e.x*e.pct);
+    h='<h3 id="auTitle">Пропозиція «прокрутити»</h3><div class="in"><p>'+e.who.charAt(0).toUpperCase()+e.who.slice(1)+' просить пропустити через твої ФОПи <b>'+e.x+' тис.</b> «за послуги». Тобі залишаться <b>'+Math.round(e.pct*100)+'%</b>, тобто '+fee+' тис.</p><p class="note">Обіг через ФОП росте, а разом із ним увага податкової. Клієнт може виявитись «під ковпаком».</p><div class="list">';
+    S.fops.forEach(function(f,i){
+      var ok=evOk(f,e.x);
+      h+='<button class="opt" data-ev="wash" data-v="'+i+'"'+(ok?'':' disabled')+'><b>Через «'+f.name+'» · +'+fee+' тис.</b><small>'+(f.isCo?'ТОВ без ліміту':'вільний ліміт '+Math.max(0,Math.round(FOP_LIMIT-f.used))+' тис.')+(ok?'':' · не вміщається')+'</small></button>';
+    });
+    h+='<button class="opt" data-ev="no"><b>Відмовитись</b><small>Без наслідків.</small></button></div></div>';
+  }
+  $('audit').innerHTML=h;var b=$('audit').querySelector('button:not([disabled])');if(b)b.focus();
+}
+function resolveEvent(k,v){
+  var e=S.events.shift();if(!e)return;
+  if(e.kind==='invite'){
+    var st=e.st;
+    if(k==='sm'||k==='lg'){var inv=Math.round(st.budget*(k==='sm'?.08:.2));if(S.cash<inv){S.events.unshift(e);return;}S.cash-=inv;S.stakes.push({id:st.id,kind:k,invest:inv,ret:Math.round(inv*(k==='sm'?1.4:1.6))});S.risk=clamp(S.risk+(k==='sm'?3:5),0,100);addLog('Ти в «делюзі» на об\'єкті «'+siteTitle(st)+'»: вклав '+inv+' тис.','');}
+    else if(k==='kick'){S.stakes.push({id:st.id,kind:'kick',invest:0,ret:Math.round(st.budget*.06)});S.risk=clamp(S.risk+5,0,100);S.contacts+=2;addLog('Закрив «дозволи» на об\'єкті «'+siteTitle(st)+'». Частку отримаєш після здачі.','');}
+    else{if(Math.random()<.3){S.contacts=Math.max(0,S.contacts-1);addLog('Знайомий образився, що ти відмовився від «делюги».','bad');}}
+  } else if(k==='wash'){
+    var f=S.fops[+v];if(!f||!evOk(f,e.x)){S.events.unshift(e);return;}
+    var fee=Math.round(e.x*e.pct);
+    S.cash+=fee;f.used+=e.x;S.contacts+=1;S.risk=clamp(S.risk+2+e.x/80,0,100);
+    addLog('Через «'+f.name+'» прокрутили '+e.x+' тис. Твої '+fee+' тис. уже в кишені.','');
+    if(Math.random()<.15){S.audits.push({kind:f.isCo?'co':'fop',f:f,fine:Math.round(e.x*.3)});S.risk=clamp(S.risk+8,0,100);addLog('Клієнт виявився «під ковпаком»: на ФОП звернули увагу.','bad');}
+  }
+  $('auWrap').hidden=true;check();ui();maybeAudit();
+}
 var DEVD={
   lot:{real:.55,ang:3,risk:3,log:'Виріс новий ЖК на пустирі. Сусіди питають про сонце у вікнах.',hint:'Пайова участь у забудові: ти в частці з забудовником. Дозволи теж «в частці».'},
   yard:{real:.5,ang:7,risk:5,log:'Точкова забудова у дворі: мешканці вийшли з плакатами, а будівельники з кранами.',hint:'Де був двір, там тепер ЖК «Затишний двір». Майданчик перенесемо. Колись.'},
@@ -486,7 +577,7 @@ function wyOf(X,Y){return (X+Y)*8}
 function newGame(){
   S={speed:0,tick:0,month:1,cash:70,risk:6,contacts:8,fame:0,rank:0,angry:0,inflate:0,rt:50,
      objs:[],offers:[],pending:[],castle:[],log:[],over:false,tab:'offers',zoom:1,cam:{x:0,y:0},
-     audits:[],devs:0,eq:{},annual:[],contracts:[],notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
+     audits:[],devs:0,eq:{},sites:[],stakes:[],events:[],siteId:0,lastWash:-9,annual:[],contracts:[],notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
   S.objs=genWorld();
   cars=genCars();
   S.cam={x:wxOf(HOME.x,HOME.y),y:wyOf(HOME.x,HOME.y)+8};
@@ -510,7 +601,7 @@ function rating(){return S.rt}
 function genOffers(){
   var cand=[],spec=[],decs=[],m=mult(),r=ZR[S.rank],x0=Math.max(0,HOME.x-r),x1=Math.min(N-1,HOME.x+r),y0=Math.max(0,HOME.y-r),y1=Math.min(N-1,HOME.y+r),x,y,o,t,off;
   for(y=y0;y<=y1;y++)for(x=x0;x<=x1;x++){
-    o=S.objs[y*N+x];if(!o||!inZone(x,y))continue;
+    o=S.objs[y*N+x];if(!o||o.site||!inZone(x,y))continue;
     t=o.t;off=null;
     if(t==='K'){if(S.rank>=2&&!o.owned)off={x:x,y:y,t:'K',budget:60,price:20,kind:'auction',comp:rnd(.05,.2),title:'Аукціон на МАФ'};}
     else if(t==='L'){if(S.rank>=2)off={x:x,y:y,t:'L',dev:'lot',budget:r5((S.rank>=3?2200:900)*rnd(.9,1.1)),kind:'tender',comp:rnd(.08,.22),title:S.rank>=3?'Забудова пустиря (ЖК)':'Пайова участь: ЖК на пустирі'};}
@@ -718,6 +809,7 @@ function nextMonth(){
   if(rt<35&&Math.random()<.3){S.risk=clamp(S.risk+5,0,100);S.contacts=Math.max(0,S.contacts-2);addLog('Мешканці вийшли під райадміністрацію. На плакатах твоє прізвище майже не видно.','bad');}
   S.angry*=.93;
   S.risk=clamp(S.risk-2.5-(rt>60?1:0)+S.castle.length*1.2,0,100);
+  citySites();genHappenings();
   genOffers();dirtyMini=true;
   var elect=((S.month-1)%12===0&&S.month>1);
   check();ui();
@@ -797,7 +889,7 @@ function auInfo(a){
   }[a.kind];
   return {title:T[0],text:T[1],lawCost:a.kind==='life'?90:70,pLaw:clamp(.55+(S.rank>=1?.1:0),0,.8),brCost:Math.max(20,Math.round(a.fine*.7)),pBr:clamp(.55+S.contacts*.005,.55,.85)};
 }
-function maybeAudit(){if(S.over||!$('auWrap').hidden||!$('elWrap').hidden||!$('dealWrap').hidden)return;if(S.audits.length)openAudit();else if(S.notes.length)openNote();}
+function maybeAudit(){if(S.over||!$('auWrap').hidden||!$('elWrap').hidden||!$('dealWrap').hidden)return;if(S.audits.length)openAudit();else if(S.events.length)openEvent();else if(S.notes.length)openNote();}
 function openNote(){var n=S.notes[0];$('auWrap').hidden=false;$('audit').innerHTML='<h3 id="auTitle">'+n.title+'</h3><div class="in">'+n.lines.map(function(l){return '<p>'+l+'</p>'}).join('')+'<div class="acts"><button class="btn primary" data-no="ok">Ясно</button></div></div>';var b=$('audit').querySelector('button');if(b)b.focus();}
 function openAudit(){var a=S.audits[0];if(!a)return;$('auWrap').hidden=false;renderAudit(a);var b=$('audit').querySelector('button');if(b)b.focus();}
 function renderAudit(a){
@@ -834,7 +926,8 @@ function resolveAudit(opt){
   addLog('Податкова: '+msg,closed?'bad':'good');
   $('auWrap').hidden=true;dirtyMini=true;check();ui();maybeAudit();
 }
-$('audit').addEventListener('click',function(e){if(e.target.closest('[data-no]')){S.notes.shift();$('auWrap').hidden=true;ui();maybeAudit();return;}
+$('audit').addEventListener('click',function(e){var evb=e.target.closest('[data-ev]');if(evb){resolveEvent(evb.dataset.ev,evb.dataset.v);return;}
+  if(e.target.closest('[data-no]')){S.notes.shift();$('auWrap').hidden=true;ui();maybeAudit();return;}
   var b=e.target.closest('[data-au]');if(!b||!S.audits.length)return;resolveAudit(b.dataset.au);});
 
 /* ================= КАР'ЄРА ТА ДІЇ ================= */
@@ -884,7 +977,7 @@ function ui(){
     oh+='<div class="offer" data-offer="'+S.offers.indexOf(o)+'" style="padding:0"><button class="offer" data-open="'+S.offers.indexOf(o)+'" style="border:0;box-shadow:none;flex:1;min-width:0;background:transparent"'+(S.over?' disabled':'')+'><span class="l"><b>'+o.title+'</b><small><span class="tag t-'+o.kind+'">'+KIND[o.kind]+'</span>'+eqTag(o)+o.name+'</small></span><span class="amt">'+(o.kind==='auction'?o.price+' тис.':o.budget+' тис.')+'</span></button><button class="btn small loc" data-loc="'+S.offers.indexOf(o)+'" aria-label="Показати на карті" title="Показати на карті">◎</button></div>';
   });
   $('offers').innerHTML=annualHtml()+(oh||'<p class="note">У твоєму районі поки все гаразд. Почекай, асфальт сам зіпсується.</p>');
-  $('offerNote').textContent='Показую 10 найближчих до камери з '+S.offers.length+'. '+(S.rank===0?'Поки що доступні лише дрібні договори до 100 тис.: ями й двори.':(S.rank===1?'ТОВ бере тендери. ФОПи годяться лише на прямі договори.':''));
+  $('offerNote').textContent='Показую 10 найближчих до камери з '+S.offers.length+'. У місті працює '+S.sites.length+' будмайданчиків. '+(S.rank===0?'Поки що доступні лише дрібні договори до 100 тис.: ями й двори.':(S.rank===1?'ТОВ бере тендери. ФОПи годяться лише на прямі договори.':''));
   var fh='';
   S.fops.forEach(function(f,i){
     var hot=f.heat>1.2;
@@ -1348,6 +1441,19 @@ function drawCarPx(x,y,c,z,W,H){
   mx.fillStyle=c.col;mx.fillRect(sx-(w>>1)+(c.ax==='x'?0:0),sy-h,w,Math.max(1,h-0));
   mx.fillStyle='#cfe9f5';mx.fillRect(sx-(w>>2),sy-h,Math.max(1,w>>1),1);
 }
+function drawSite(sx,sy,z,now,st){
+  G=mx;var cx=sx,cy=sy+8*z,i;
+  var w=16*z,h=8*z,col=(Math.floor(now/500)%2)?'#f2c230':'#222222';
+  bl(cx,cy-h,cx+w,cy,'#f2c230');bl(cx+w,cy,cx,cy+h,'#222222');bl(cx,cy+h,cx-w,cy,'#f2c230');bl(cx-w,cy,cx,cy-h,'#222222');
+  var bx=Math.round(cx+5*z),by=Math.round(cy+2*z),th=Math.max(2,Math.round(z)),top=by-Math.round(48*z);
+  mx.fillStyle='#f2c230';mx.fillRect(bx,top,th,by-top);
+  mx.fillStyle='#222';for(i=0;i<5;i++)mx.fillRect(bx,top+Math.round(i*10*z),th,Math.max(1,Math.round(3*z)));
+  mx.fillStyle='#f2c230';mx.fillRect(bx-Math.round(22*z),top,Math.round(42*z),Math.max(th,Math.round(2*z)));
+  mx.fillStyle='#777';mx.fillRect(bx+Math.round(12*z),top+th,Math.round(5*z),Math.round(4*z));
+  var sw=reduce?0:Math.sin(now/700+st.id)*5*z,hx=Math.round(bx-Math.round(15*z)+sw);
+  mx.fillStyle='#222';mx.fillRect(hx,top+th,Math.max(1,Math.round(z*.6)),Math.round(16*z));
+  mx.fillStyle='#e8603c';mx.fillRect(hx-Math.round(3*z),top+th+Math.round(16*z),Math.round(7*z),Math.round(4*z));
+}
 var MK={};
 function markerSprite(kind){
   if(MK[kind])return MK[kind];
@@ -1363,7 +1469,7 @@ function drawMap(now){
   mx.imageSmoothingEnabled=false;
   mx.fillStyle='#14242f';mx.fillRect(0,0,W,H);
   buildCarMap();hits=[];
-  var tw=SW*z,th=SH*z,ox=16*z,oyy=SOY*z;
+  var tw=SW*z,th=SH*z,ox=16*z,oyy=SOY*z,sitesDraw=[];
   for(s=0;s<=2*N-2;s++){
     for(X=Math.max(0,s-N+1);X<=Math.min(N-1,s);X++){
       Y=s-X;
@@ -1384,10 +1490,12 @@ function drawMap(now){
           var bob=reduce?0:Math.sin(now/260+X)*1.5;mx.fillStyle='#ffe27a';mx.fillRect(Math.round(sx),Math.round(sy-(14+bob)*z+8*z),Math.max(2,Math.round(3*z)),Math.max(2,Math.round(3*z)));
         }
       }
+      if(o&&o.site)sitesDraw.push([sx,sy,o.site]);
       var cl=carMap[Y*N+X];
       if(cl)for(i=0;i<cl.length;i++)drawCarPx(cl[i][0],cl[i][1],cl[i][2],z,W,H);
     }
   }
+  for(i=0;i<sitesDraw.length;i++)drawSite(sitesDraw[i][0],sitesDraw[i][1],z,now,sitesDraw[i][2]);
   /* підсвітка */
   if(hover&&!S.over){
     var hp=screenOf(hover.x,hover.y),w2=16*z,h2=8*z;
@@ -1518,6 +1626,7 @@ function tap(e){
   var off=offerAt(t.x,t.y);
   if(off){openDeal(off);return;}
   var o=S.objs[t.y*N+t.x];
+  if(o&&o.site){addLog('Будівельний майданчик: «'+siteTitle(o.site)+'», '+o.site.owner+'. Ще '+o.site.left+' міс.'+(S.stakes.some(function(k){return k.id===o.site.id})?' Ти в «делюзі».':''),'');ui();return;}
   if(!inZone(t.x,t.y))addLog('Це не твій район. Підвищення в ранзі відкриє більше кварталів.','');
   else if(o&&'RYHSPB'.indexOf(o.t)>=0)addLog('«'+o.name+'» ('+(ZNAME[o.zn]||'місто')+'): стан '+Math.round(o.c)+'%. '+(o.c>=58?'Поки без заявок.':'Заявки для твого рангу тут нема.'),'');
   else return;
@@ -1573,7 +1682,7 @@ function frame(now){
   if(!$('pane-castle').hidden)drawCastle(now);
   requestAnimationFrame(frame);
 }
-if(typeof window.__EXPOSE==='function')window.__EXPOSE({get S(){return S},get D(){return D},get E(){return E},newGame:newGame,nextMonth:nextMonth,tickTime:tickTime,openDeal:openDeal,tryDeal:tryDeal,signDeal:signDeal,renderDeal:renderDeal,rankUp:rankUp,openElection:openElection,runElection:runElection,openAnnual:openAnnual,annualTick:annualTick,resolveAudit:resolveAudit,maybeAudit:maybeAudit,genOffers:genOffers,ui:ui,drawMap:drawMap,drawMini:drawMini,drawCastle:drawCastle,chance:chance,setD:function(k,v){D[k]=v;},updateRating:updateRating,tap:tap,setZoom:setZoom,centerOn:centerOn});
+if(typeof window.__EXPOSE==='function')window.__EXPOSE({get S(){return S},get D(){return D},get E(){return E},newGame:newGame,nextMonth:nextMonth,tickTime:tickTime,openDeal:openDeal,tryDeal:tryDeal,signDeal:signDeal,renderDeal:renderDeal,rankUp:rankUp,openElection:openElection,runElection:runElection,resolveEvent:resolveEvent,citySites:citySites,genHappenings:genHappenings,openAnnual:openAnnual,annualTick:annualTick,resolveAudit:resolveAudit,maybeAudit:maybeAudit,genOffers:genOffers,ui:ui,drawMap:drawMap,drawMini:drawMini,drawCastle:drawCastle,chance:chance,setD:function(k,v){D[k]=v;},updateRating:updateRating,tap:tap,setZoom:setZoom,centerOn:centerOn});
 loadAtlases();
 newGame();
 resizeMap();
