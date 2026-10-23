@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&family=Rubik+Mono+One&display=swap">
 <style>
-/* Layout: ізометричний район Києва зліва, кар'єра/замок/новини справа; на телефоні одна колонка. Мультяшні наліпки з товстим контуром. */
+/* Layout: ізометричний район міста зліва, кар'єра/замок/новини справа; на телефоні одна колонка. Мультяшні наліпки з товстим контуром. */
 :root{
   --bg:#bfe4f0;
   --card:#ffffff;
@@ -106,7 +106,7 @@ button:focus-visible,canvas:focus-visible{outline:3px solid var(--blue);outline-
 
   <div class="grid">
     <section class="col" aria-label="Район">
-      <div class="card cv"><canvas id="city" width="800" height="440" aria-label="Ізометрична карта району Києва. Клікни по об'єкту зі знаком оклику, щоб взяти замовлення."></canvas><div class="bar" style="margin:6px 6px 2px" aria-hidden="true"><i id="tickbar" style="width:0;background:#3b82f6"></i></div></div>
+      <div class="card cv"><canvas id="city" width="800" height="440" aria-label="Ізометрична карта району міста. Клікни по об'єкту зі знаком оклику, щоб взяти замовлення."></canvas><div class="bar" style="margin:6px 6px 2px" aria-hidden="true"><i id="tickbar" style="width:0;background:#3b82f6"></i></div></div>
       <div class="meters" id="meters"></div>
       <div class="card">
         <h2>Заявки району</h2>
@@ -168,7 +168,7 @@ var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce
 var MAP=['HHRYPRHH','HYRYPRYH','SYRKKRYL','RRRRRRRR','HYRYYRHH','HHRYKRLL','YYRPPRHY','HSRPPRHH'];
 var STREETS=['вул. Каштанова','вул. Подільська','бульв. Дружби','вул. Липська','просп. Лісовий','вул. Сирецька','пров. Ярославів','вул. Борщагівська'];
 var BASE={R:60,Y:70,H:170,S:240,P:130};
-var RANKS=['ФОП-початківець','Підрядник','Директор КП','Депутат Київради'];
+var RANKS=['ФОП-початківець','Підрядник','Директор КП','Депутат міськради'];
 var MONTHS=['Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень','Січень','Лютий'];
 var TIERS=[
   {n:'Чесно',cost:.78,q:.95,fame:2,d:'Як у кошторисі. Прибуток тонкий, зате ремонт живе довго.'},
@@ -437,7 +437,7 @@ function nextMonth(){
   ui();
   if(elect&&!S.over){
     if(S.rank>=2)openElection();
-    else addLog('Вибори до Київради пройшли без тебе. Ти ще не в грі.','');
+    else addLog('Вибори до міськради пройшли без тебе. Ти ще не в грі.','');
     ui();
   }
 }
@@ -474,7 +474,7 @@ function openElection(){
   $('elWrap').hidden=false;renderElection();
 }
 function renderElection(){
-  var st=electStats(),h='<h3 id="elTitle">Вибори до Київради</h3>';
+  var st=electStats(),h='<h3 id="elTitle">Вибори до міськради</h3>';
   h+='<p class="sub">'+(S.rank===3?'Переобрання. Втратиш місце, якщо програєш.':'Мажоритарний округ. Хто купив більше голосів і побачив більше афіш, той і виграв.')+'</p>';
   h+='<div class="sec">Кампанія</div><div class="list">';
   Object.keys(EL).forEach(function(k){
@@ -493,7 +493,7 @@ function runElection(){
   var sup=baseSupport()+st.pts+rnd(0,12),riv=40+(S.rank===3?6:0)+rnd(0,25)-st.rv;
   $('elWrap').hidden=true;
   if(sup>riv){
-    if(S.rank<3){S.rank=3;addLog('Перемога! Ти депутат Київради. Тепер ухвалюєш бюджети, яких сам же й потребуєш.','good');}
+    if(S.rank<3){S.rank=3;addLog('Перемога! Ти депутат міськради. Тепер ухвалюєш бюджети, яких сам же й потребуєш.','good');}
     else addLog('Переобрано. Виборці або забули, або повірили.','good');
     S.fame+=5;S.contacts+=5;
   } else {
@@ -562,7 +562,7 @@ function ui(){
   if(nr)ch+='<button class="btn gold" data-career="up"'+(nr.ok&&!S.over?'':' disabled')+' style="width:100%">'+nr.t+'</button><p class="note">'+nr.need+'</p>';
   else if(S.rank===2){
     var nxt=S.month<13?13:Math.ceil((S.month-1)/12)*12+1;
-    ch+='<p class="note" style="margin:0">Далі тільки вибори до Київради. Найближчі: місяць '+nxt+'. На виборах гречка дорожча, а слава й зв\'язки допомагають.</p>';
+    ch+='<p class="note" style="margin:0">Далі тільки вибори до міськради. Найближчі: місяць '+nxt+'. На виборах гречка дорожча, а слава й зв\'язки допомагають.</p>';
   } else ch+='<p class="note" style="margin:0">Мандат є. Тепер доступні МАФ-аукціони й забудова пустирів. Переобрання кожні 12 місяців.</p>';
   $('career').innerHTML=ch;
   $('bribe').textContent='Журналіст · 40';$('bribe').disabled=S.over||S.cash<40;

@@ -124,10 +124,10 @@ button:focus-visible{outline:2px dotted var(--ink);outline-offset:-5px}
 
 <div class="desk">
   <section class="win" aria-label="Карта міста">
-    <div class="tb"><span>Корупціонер 2000 · Київ</span><span id="rank">ФОП-початківець</span></div>
+    <div class="tb"><span>Корупціонер 2000</span><span id="rank">ФОП-початківець</span></div>
     <div class="bar-top" id="meters"></div>
     <div class="sunk mapwrap" id="mapwrap">
-      <canvas id="map" aria-label="Піксельна карта Києва. Перетягуй, щоб рухати камеру. Тицяй на знак оклику, щоб взяти замовлення."></canvas>
+      <canvas id="map" aria-label="Піксельна карта міста. Перетягуй, щоб рухати камеру. Тицяй на знак оклику, щоб взяти замовлення."></canvas>
       <div class="ctl" id="zoomctl"><button class="btn sq" data-z="1" aria-label="Наблизити">+</button><button class="btn sq" data-z="-1" aria-label="Віддалити">−</button><button class="btn sq" data-home="1" aria-label="До свого району" title="До свого району">⌂</button><button class="btn sq" id="menuBtn" aria-label="Меню" title="Меню">≡</button></div>
       <div class="ctl r" id="speed" role="group" aria-label="Швидкість часу"></div>
       <canvas id="mini" width="80" height="80" aria-label="Мінікарта міста"></canvas>
@@ -159,10 +159,9 @@ button:focus-visible{outline:2px dotted var(--ink);outline-offset:-5px}
       <button class="btn primary big" id="tStart">Старт</button>
       <button class="btn big" id="tHow">Як грати</button>
       <button class="btn big" id="tSet">Налаштування</button>
-      <button class="btn big" id="tAbout">Про гру</button>
     </div>
     <div class="win tpanel" id="tPanel" hidden><div class="tb"><span id="tpT"></span></div><div class="in" id="tpB"></div><div style="padding:0 12px 12px"><button class="btn" id="tBack" style="width:100%">Назад</button></div></div>
-    <div class="tfoot">Сатира. Усі події, фірми й персонажі вигадані, збіги випадкові.</div>
+    <div class="tfoot">Усі події, фірми й персонажі вигадані, збіги випадкові.</div>
   </div>
 </div>
 <div class="overlay" id="dealWrap" hidden role="dialog" aria-modal="true" aria-labelledby="dealTitle"><div class="modal" id="deal"></div></div>
@@ -192,7 +191,7 @@ var SW=32, SH=60, SOY=44;       /* розмір спрайта клітинки 
 var ROAD_H=['вул. Каштанова','вул. Подільська','бульв. Дружби','вул. Липська','просп. Лісовий','вул. Сирецька','пров. Ярославів','вул. Борщагівська','вул. Лісна','вул. Озерна'];
 var ROAD_V=['просп. Берестейський','вул. Лугова','вул. Дубова','вул. Зарічна','вул. Академічна','вул. Харківська','вул. Вишнева','вул. Лівобережна','вул. Осокорська','вул. Трисвятська'];
 var BASE={R:60,Y:70,H:170,S:240,P:130,B:400};
-var RANKS=['ФОП-початківець','Підрядник','Директор КП','Депутат Київради'];
+var RANKS=['ФОП-початківець','Підрядник','Директор КП','Депутат міськради'];
 var MONTHS=['Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень','Січень','Лютий'];
 var TIERS=[
   {n:'Чесно',cost:.78,q:.95,fame:2,d:'Як у кошторисі. Прибуток тонкий, зате ремонт живе довго.'},
@@ -431,7 +430,7 @@ function bName(o,x,y){
     default:return 'буд. '+n;
   }
 }
-var SITE_OWN=['ТОВ «БудІнвест»','КП «Місто-сервіс»','ПП «Ремонт-плюс»','ТОВ «Київ-Девелопмент»','ТОВ «Стройтрест-2000»','ТОВ «Нова столиця»'];
+var SITE_OWN=['ТОВ «БудІнвест»','КП «Місто-сервіс»','ПП «Ремонт-плюс»','ТОВ «Мега-Девелопмент»','ТОВ «Стройтрест-2000»','ТОВ «Нова столиця»'];
 var CLIENTS=['знайомий знайомого з Борщагівки','двоюрідний брат депутата','«бізнесмен із Лівого берега»','директор «чужого» КП','колишній однокласник, який «піднявся»'];
 function siteTitle(st){return st.kind==='build'?'Забудова пустиря: ЖК':'Реконструкція: '+st.name}
 function citySites(){
@@ -882,7 +881,7 @@ function nextMonth(){
   check();ui();
   if(elect&&!S.over){
     if(S.rank>=2)openElection();
-    else addLog('Вибори до Київради пройшли без тебе. Ти ще не в грі.','');
+    else addLog('Вибори до міськради пройшли без тебе. Ти ще не в грі.','');
     ui();
   }
   maybeAudit();
@@ -917,7 +916,7 @@ function electStats(){
 }
 function openElection(){E={pick:{agit:false,buck:false,tech:false,admin:false}};$('elWrap').hidden=false;renderElection();}
 function renderElection(){
-  var st=electStats(),h='<h3 id="elTitle">Вибори до Київради</h3><div class="in">';
+  var st=electStats(),h='<h3 id="elTitle">Вибори до міськради</h3><div class="in">';
   h+='<p class="sub">'+(S.rank===3?'Переобрання. Втратиш місце, якщо програєш.':'Мажоритарний округ. Хто купив більше голосів і побачив більше афіш, той і виграв.')+'</p>';
   h+='<div class="sec">Кампанія</div><div class="list">';
   Object.keys(EL).forEach(function(k){
@@ -937,7 +936,7 @@ function runElection(){
   var sup=baseSupport()+st.pts+rnd(0,12),riv=40+(S.rank===3?6:0)+rnd(0,25)-st.rv;
   $('elWrap').hidden=true;
   if(sup>riv){
-    if(S.rank<3){S.rank=3;addLog('Перемога! Ти депутат Київради. Тепер ухвалюєш бюджети, яких сам же й потребуєш. Твій район виріс.','good');}
+    if(S.rank<3){S.rank=3;addLog('Перемога! Ти депутат міськради. Тепер ухвалюєш бюджети, яких сам же й потребуєш. Твій район виріс.','good');}
     else addLog('Переобрано. Виборці або забули, або повірили.','good');
     S.fame+=5;S.contacts+=5;
   } else {
@@ -1063,7 +1062,7 @@ function ui(){
   if(nr)ch+='<button class="btn gold" data-career="up"'+(nr.ok&&!S.over?'':' disabled')+' style="width:100%">'+nr.t+'</button><p class="note" style="margin-top:4px">'+nr.need+'</p>';
   else if(S.rank===2){
     var nxt=S.month<13?13:Math.ceil((S.month-1)/12)*12+1;
-    ch+='<p class="note">Далі тільки вибори до Київради. Найближчі: місяць '+nxt+'. Слава й зв\'язки допомагають, гречка дорожча.</p>';
+    ch+='<p class="note">Далі тільки вибори до міськради. Найближчі: місяць '+nxt+'. Слава й зв\'язки допомагають, гречка дорожча.</p>';
   } else ch+='<p class="note">Мандат є. Тепер доступні МАФ-аукціони й забудова пустирів по всьому місту. Переобрання кожні 12 місяців.</p>';
   ch+='<div class="sec">Дії</div><div class="list"><button class="btn" data-act="bribe"'+(S.over||S.cash<40?' disabled':'')+'>Журналіст · 40 тис. (підозра −12)</button><button class="btn" data-act="lawyer"'+(S.over||S.cash<90||S.rank<1?' disabled':'')+'>Юрист · 90 тис. (підозра −25, з рангу 1)</button><button class="btn" data-act="flee"'+(S.over||S.cash<FLEE_COST?' disabled':'')+'>Втекти за кордон · '+FLEE_COST+' тис.</button></div>';
   $('career').innerHTML=ch;
@@ -1958,11 +1957,10 @@ function drawTitle(now){
   mc=smc;mx=smx;S.zoom=sz;S.cam=sc;
 }
 var HOW='<ul style="padding-left:18px;margin:0"><li><b>Мета.</b> Піднятись від ФОПа з лопатою до депутата й не потрапити за ґрати. Сімейний бюджет складається тільки з грошей, які «осіли» у міських закупівлях.</li><li><b>Заявки.</b> Тицяй на знак оклику на карті або обирай із вкладки «Заявки». Прямі договори до 100 тис., далі тендери й аукціони. Виграв, то заробляєш різницю між кошторисом і реальною вартістю.</li><li><b>Фірми.</b> ФОПи й ТОВ потрібні, щоб розкидати обіг. Кожен платить податки, ЄСВ і потребує бухгалтера, а чим більше «обліку», тим більше підозри.</li><li><b>Підозра й зв\'язки.</b> Підозра росте від хабарів, завищених кошторисів і дешевого ремонту. Зв\'язки додають шансів виграти, рятують на перевірках, але їх можна спалити.</li><li><b>Техніка, річні тендери, бізнес-схеми.</b> Деякі замовлення потребують техніки, річні тендери оголошують раз на рік, а на будмайданчиках іноді кличуть «у делюгу».</li><li><b>Час.</b> Стоїть на паузі, поки не натиснеш 1× чи 2×. Кожен місяць: гроші, податки, зношення міста, зима.</li><li><b>Кінець.</b> Гру можна програти (в\'язниця, бунт мешканців) або дійти до вершини й втекти з награбованим.</li></ul>';
-var ABOUT='<p>«Корупціонер 2000» — сатирична гра про міську владу, подану як ретро-симулятор у дусі SimCity 2000. Місто Київ вигадане настільки, наскільки це можливо.</p><p>Усі події, фірми, суми й персонажі вигадані. Гра не закликає красти, вона висміює, як це відбувається.</p><p>Пікселі, будівлі, дерева, авто, ліхтарі й лев — намальовані вручну й нейромережею, зібрані в одну гру. Дороги й парковки згенеровано кодом.</p>';
 function titleShow(panel){
   $('tMenu').hidden=!!panel;$('tPanel').hidden=!panel;
   if(!panel)return;
-  var T={how:['Як грати',HOW],about:['Про гру',ABOUT],set:['Налаштування','<label><input type="checkbox" id="stMk"> Показувати знаки заявок на карті</label><label><input type="checkbox" id="stRd"> Менше анімацій (авто, фонтани, дим)</label><p class="note" style="margin:8px 0 0">Налаштування зберігаються в цьому браузері.</p>']}[panel];
+  var T={how:['Як грати',HOW],set:['Налаштування','<label><input type="checkbox" id="stMk"> Показувати знаки заявок на карті</label><label><input type="checkbox" id="stRd"> Менше анімацій (авто, фонтани, дим)</label><p class="note" style="margin:8px 0 0">Налаштування зберігаються в цьому браузері.</p>']}[panel];
   $('tpT').textContent=T[0];$('tpB').innerHTML=T[1];
   if(panel==='set'){
     $('stMk').checked=SHOWMK;$('stRd').checked=reduce;
@@ -1982,7 +1980,6 @@ $('tStart').addEventListener('click',function(){startGame(true);});
 $('tCont').addEventListener('click',function(){startGame(false);});
 $('tHow').addEventListener('click',function(){titleShow('how');});
 $('tSet').addEventListener('click',function(){titleShow('set');});
-$('tAbout').addEventListener('click',function(){titleShow('about');});
 $('tBack').addEventListener('click',function(){titleShow(null);});
 $('menuBtn').addEventListener('click',openTitle);
 document.addEventListener('keydown',function(e){if(TITLE&&e.key==='Enter'&&$('tPanel').hidden)startGame(!STARTED?true:false);});
