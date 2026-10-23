@@ -744,7 +744,7 @@ function runElection(){
 /* ================= ПОДАТКОВА ================= */
 function auInfo(a){
   var T={
-    fop:['Податкова: «'+(a.f?a.f.name:'')+'»','Прийшли без попередження. Просять показати техніку, працівників і пояснити обіг '+Math.round(a.f?a.f.lastUsed:0)+' тис. за місяць. Пояснень немає, є ФОП на тітку.'],
+    fop:['Податкова: «'+(a.f?a.f.name:'')+'»','Прийшли без попередження. Просять показати техніку, працівників і пояснити обіг '+Math.round(a.f?a.f.lastUsed:0)+' тис. за місяць. '+((a.f&&a.f.name!=='ФОП Ви')?'Пояснень немає, але «'+a.f.name+'» підписала все, не читаючи.':'Пояснень немає. ФОП оформлений на тебе, тож тітку тут не обійдеш: свідчити доведеться самому.')],
     co:['Податкова: ТОВ «Ви і Ко»','Розбіжності в ПДВ і податкових накладних: у договорах гроші є, а працівників нема. Донараховують штраф.'],
     life:['Перевірка декларації','Родина живе краще, ніж задекларовано: паркан, леви, золоті унітази. Просять пояснити, звідки. «Бабуся» уже не годиться.']
   }[a.kind];
@@ -878,7 +878,7 @@ $('offers').addEventListener('click',function(e){
 });
 $('fops').addEventListener('click',function(e){
   var q=e.target.closest('[data-eq]');
-  if(q&&!S.over){var kk=q.dataset.eq;if(!S.eq[kk]&&S.cash>=EQ[kk].c){S.cash-=EQ[kk].c;S.eq[kk]=true;S.risk=clamp(S.risk+1,0,100);addLog('Куплено: '+EQ[kk].n.toLowerCase()+'. Оформлено на тітку, звісно.','');}ui();return;}
+  if(q&&!S.over){var kk=q.dataset.eq;if(!S.eq[kk]&&S.cash>=EQ[kk].c){S.cash-=EQ[kk].c;S.eq[kk]=true;S.risk=clamp(S.risk+1,0,100);addLog('Куплено: '+EQ[kk].n.toLowerCase()+'. '+(S.fops.length>1?'Оформлено на «'+S.fops[S.fops.length-1].name+'», звісно.':'Оформлено на себе: тітку ще не завели.'),'');}ui();return;}
   var b=e.target.closest('[data-fop]');if(!b||S.over)return;
   if(b.dataset.fop==='equip'){var f=S.fops[+b.dataset.i];if(f&&!f.equip&&S.cash>=35){S.cash-=35;f.equip=true;addLog('Орендували екскаватор для звітності: «'+f.name+'» тепер виглядає серйозно.','good');}}
   else if(b.dataset.fop==='new'&&S.cash>=12){
