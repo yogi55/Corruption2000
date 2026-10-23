@@ -447,7 +447,7 @@ function genHappenings(){
   }
   if(S.month>=3&&S.month-S.lastWash>=3&&Math.random()<Math.min(.35,.22+S.contacts*.002)){
     var X=S.rank===0?rnd(50,120):(S.rank===1?rnd(120,400):rnd(300,900));
-    S.lastWash=S.month;S.events.push({kind:'wash',x:Math.round(X/5)*5,pct:Math.round(rnd(.08,.15)*100)/100,who:CLIENTS[(Math.random()*CLIENTS.length)|0]});
+    S.lastWash=S.month;S.events.push({kind:'wash',x:Math.round(X/5)*5,pct:Math.round(rnd(.12,.2)*100)/100,who:CLIENTS[(Math.random()*CLIENTS.length)|0]});
   }
 }
 function evOk(f,X){return f.isCo||f.used+X<=FOP_LIMIT}
@@ -488,6 +488,19 @@ function resolveEvent(k,v){
     if(Math.random()<.15){S.audits.push({kind:f.isCo?'co':'fop',f:f,fine:Math.round(e.x*.3)});S.risk=clamp(S.risk+8,0,100);S.contacts=Math.max(0,S.contacts-2);addLog('Клієнт виявився «під ковпаком»: на ФОП звернули увагу.','bad');}
   }
   $('auWrap').hidden=true;check();ui();maybeAudit();
+}
+var ESV_FOP=1.8,ESV_CO=4,ACC=[{n:'Без бухгалтера',m:0},{n:'Аутсорс-бухгалтер',m:1},{n:'Головбух',m:1.8}];
+function taxRate(f){return (f&&f.isCo?.06:.05)*(S.acc===2?.85:1)}
+function accBase(){var c=0;S.fops.forEach(function(f){c+=(f.isCo?6:1.5)});return c}
+function accCost(lvl){return Math.round(accBase()*ACC[lvl===undefined?S.acc:lvl].m*10)/10}
+function payTaxes(){
+  var tax=0,esv=0,fine=0,acc=accCost();
+  S.fops.forEach(function(f){tax+=f.used*taxRate(f);esv+=f.isCo?ESV_CO:ESV_FOP;});
+  if(S.acc===0)S.fops.forEach(function(f){if(Math.random()<.12){fine+=Math.round(5+Math.random()*15);f.heat+=.4;}});
+  var total=Math.round((tax+esv+acc+fine)*10)/10,due=total+S.taxDebt;
+  S.lastTax={tax:Math.round(tax),esv:Math.round(esv*10)/10,acc:acc,fine:fine};
+  if(S.cash>=due){S.cash-=due;S.taxDebt=0;addLog('Податки: '+Math.round(tax)+', ЄСВ '+S.lastTax.esv+(acc?', бухгалтер '+acc:'')+(fine?', штраф за звітність '+fine:'')+'. Усього '+Math.round(total)+' тис.',fine?'bad':'');}
+  else{S.taxDebt=Math.round((due-S.cash)*1.1);S.cash=0;S.risk=clamp(S.risk+5,0,100);addLog('Нема чим платити податки: борг '+S.taxDebt+' тис. з пенею. Податкова вже в курсі.','bad');}
 }
 var DEVD={
   lot:{real:.55,ang:3,risk:3,log:'Виріс новий ЖК на пустирі. Сусіди питають про сонце у вікнах.',hint:'Пайова участь у забудові: ти в частці з забудовником. Дозволи теж «в частці».'},
@@ -578,7 +591,7 @@ function wyOf(X,Y){return (X+Y)*8}
 function newGame(){
   S={speed:0,tick:0,month:1,cash:70,risk:6,contacts:8,fame:0,rank:0,angry:0,inflate:0,rt:50,
      objs:[],offers:[],pending:[],castle:[],log:[],over:false,tab:'offers',zoom:1,cam:{x:0,y:0},
-     audits:[],devs:0,eq:{},sites:[],stakes:[],events:[],siteId:0,lastWash:-9,annual:[],contracts:[],notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
+     audits:[],devs:0,eq:{},acc:0,taxDebt:0,lastTax:null,sites:[],stakes:[],events:[],siteId:0,lastWash:-9,annual:[],contracts:[],notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
   S.objs=genWorld();
   cars=genCars();
   S.cam={x:wxOf(HOME.x,HOME.y),y:wyOf(HOME.x,HOME.y)+8};
@@ -683,7 +696,7 @@ function renderDeal(){
       h+='<div class="acts"><button class="btn primary" data-a="sign"'+(S.cash<up?' disabled':'')+'>Оформити</button><button class="btn" data-a="cancel">Відмовитись</button></div>';
       if(S.cash<up)h+='<p class="note" style="margin-top:6px">Не вистачає готівки: треба '+up+' тис.</p>';
     } else {
-      var eqk=reqEq(o),eqc=(eqk&&!S.eq[eqk])?(D.eqMode==='rent'?Math.round(EQ[eqk].c*.3):EQ[eqk].c):0,t=TIERS[D.tier],costNow=Math.round(o.budget*t.cost*rf),up2=costNow+bribeAmt+tailorAmt+eqc,prof=pay-up2+(eqc&&D.eqMode!=='rent'?eqc:0),avans=Math.round(pay*.25);
+      var eqk=reqEq(o),eqc=(eqk&&!S.eq[eqk])?(D.eqMode==='rent'?Math.round(EQ[eqk].c*.3):EQ[eqk].c):0,t=TIERS[D.tier],costNow=Math.round(o.budget*t.cost*rf),up2=costNow+bribeAmt+tailorAmt+eqc,txv=Math.round(pay*taxRate(S.fops[D.fop]||S.fops[0])),prof=pay-up2-txv+(eqc&&D.eqMode!=='rent'?eqc:0),avans=Math.round(pay*.25);
       var okFops=S.fops.filter(fopOk);
       if(okFops.length&&!fopOk(S.fops[D.fop]))D.fop=S.fops.indexOf(okFops[0]);
       h+='<p><b>Договір твій.</b> Обери, на кого оформити і як робити.</p>';
@@ -709,6 +722,7 @@ function renderDeal(){
         (bribeAmt?'<div><span>Відкат</span><span class="neg">−'+bribeAmt+'</span></div>':'')+
         (tailorAmt?'<div><span>Умови під себе</span><span class="neg">−'+tailorAmt+'</span></div>':'')+
         (eqc?'<div><span>'+(D.eqMode==='rent'?'Оренда техніки':'Купівля техніки')+'</span><span class="neg">−'+eqc+'</span></div>':'')+
+        '<div><span>Податок з обігу ('+Math.round(taxRate(S.fops[D.fop]||S.fops[0])*1000)/10+'%)</span><span class="neg">−'+txv+'</span></div>'+
         '<div class="tot"><span>Прибуток'+(eqc&&D.eqMode!=='rent'?' (техніка в активах)':'')+'</span><span class="'+(prof>=0?'pos':'neg')+'">'+(prof>=0?'+':'')+prof+' тис.</span></div></div>';
       var short=S.cash<up2-avans;
       h+='<div class="acts"><button class="btn primary" data-a="sign"'+((short||!okFops.length)?' disabled':'')+'>Підписати акт</button><button class="btn" data-a="cancel">Відмовитись</button></div>';
@@ -765,6 +779,7 @@ function nextMonth(){
   var trib=0;
   if(S.rank>=2&&inc>0){trib=Math.round(inc*(S.rank>=3?.15:.1));S.cash-=trib;}
   addLog(MONTHS[(S.month-1)%12]+': надійшло '+Math.round(inc)+' тис.'+(trib?', покровителю «долю» '+trib+' тис.':'.'),'');
+  payTaxes();
   var idx=(S.month-1)%12,k=idx>=8?1.6:1,mine=0,bad=0,weak=[],cmul={},wmul=1;
   S.contracts.forEach(function(c){var tf=[.5,.8,1.2][c.tier];ANN[c.type].tiles.split('').forEach(function(t){cmul[t]=Math.min(cmul[t]||9,tf)});if(c.type==='winter')wmul=Math.min(wmul,tf);if(c.tier===2)bad++;});
   for(i=0;i<S.objs.length;i++){
@@ -783,8 +798,8 @@ function nextMonth(){
   if(idx===8&&weak.length+bad>0)addLog('Почалась зима. Те, що ти клав у жовтні, дякує за підробіток.','bad');
   S.fops.forEach(function(f){
     f.lastUsed=f.used;
-    if(!f.isCo)f.heat=f.heat*.7+(f.used/FOP_LIMIT)*eqHeat();
-    else f.heat=f.heat*.7+f.used/450+S.inflate*.1;
+    if(!f.isCo)f.heat=f.heat*.7+(f.used/FOP_LIMIT)*eqHeat()*(S.acc===2?.7:1);
+    else f.heat=f.heat*.7+(f.used/450+S.inflate*.1)*(S.acc===2?.7:1);
     f.used=0;
   });
   S.audits=[];
@@ -986,7 +1001,9 @@ function ui(){
       (f.isCo?'':'<div class="pb"><i style="width:'+clamp(f.used/FOP_LIMIT*100,0,100)+'%"></i></div><div class="row"><span class="note">Обіг місяця: '+Math.round(f.used)+' з '+FOP_LIMIT+' тис.</span>'+''+'</div>')+'</div>';
   });
   if(S.fops.filter(function(f){return !f.isCo;}).length<6)fh+='<button class="fopb opt" data-fop="new"'+(S.cash<12||S.over?' disabled':'')+'><b>+ Новий ФОП на родича</b><small>12 тис. · свій ліміт '+FOP_LIMIT+' тис. на місяць</small></button>';
-  fh=contractsHtml()+fh;
+  var bh='<div class="sec">Бухгалтерія і податки</div><p class="note">ФОП: 5% з обігу і ЄСВ '+ESV_FOP+' тис./міс. ТОВ: 6% і штат '+ESV_CO+' тис./міс. Бухгалтер коштує 1,5 тис. за кожен ФОП і 6 за ТОВ. Без нього звітність іноді здають із помилками (штраф). Головбух ×1,8: податки −15%, увага податкової −30%.'+(S.lastTax?' Минулого місяця: податок '+S.lastTax.tax+', ЄСВ '+S.lastTax.esv+(S.lastTax.acc?', бухгалтер '+S.lastTax.acc:'')+(S.lastTax.fine?', штрафи '+S.lastTax.fine:'')+'.':'')+(S.taxDebt?' <b class="neg">Борг по податках: '+S.taxDebt+' тис.</b>':'')+'</p><div class="list">';
+  ACC.forEach(function(a,i){bh+='<button class="opt" data-acc="'+i+'" aria-pressed="'+(S.acc===i)+'"'+(S.over?' disabled':'')+'><b>'+a.n+(i?' · '+accCost(i)+' тис./міс.':'')+'</b><small>'+['Економія, але 12% на місяць на кожну фірму: помилки в звітності.','Усе здають вчасно.','Оптимізація, нижчі податки, менше уваги податкової.'][i]+'</small></button>';});
+  fh=contractsHtml()+bh+'</div>'+fh;
   fh+='<div class="sec">Автопарк</div><p class="note">Тендери потребують техніки: з нею +6% до шансу, без неї −10%. Парк знижує увагу податкової (зараз ×'+eqHeat().toFixed(2)+'). Купуєш тут або під час тендера, навіть з авансу.</p>';
   Object.keys(EQ).forEach(function(k){fh+='<button class="up'+(S.eq[k]?' own':'')+'" data-eq="'+k+'"'+((S.eq[k]||S.cash<EQ[k].c||S.over)?' disabled':'')+'><span><b>'+EQ[k].n+'</b><small>'+EQ[k].use+'</small></span><span>'+(S.eq[k]?'є':EQ[k].c+' тис.')+'</span></button>';});
   $('fops').innerHTML=fh;
@@ -1018,6 +1035,8 @@ $('offers').addEventListener('click',function(e){
   var l=e.target.closest('[data-loc]');if(l){var o=S.offers[+l.dataset.loc];if(o)centerOn(o.x+.5,o.y+.5);}
 });
 $('fops').addEventListener('click',function(e){
+  var ab=e.target.closest('[data-acc]');
+  if(ab&&!S.over){S.acc=+ab.dataset.acc;addLog('Бухгалтерія: '+ACC[S.acc].n.toLowerCase()+'.','');ui();return;}
   var q=e.target.closest('[data-eq]');
   if(q&&!S.over){var kk=q.dataset.eq;if(!S.eq[kk]&&S.cash>=EQ[kk].c){S.cash-=EQ[kk].c;S.eq[kk]=true;S.risk=clamp(S.risk+1,0,100);addLog('Куплено: '+EQ[kk].n.toLowerCase()+'. '+(S.fops.length>1?'Оформлено на «'+S.fops[S.fops.length-1].name+'», звісно.':'Оформлено на себе: тітку ще не завели.'),'');}ui();return;}
   var b=e.target.closest('[data-fop]');if(!b||S.over)return;
