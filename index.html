@@ -1428,11 +1428,12 @@ function loadAtlases(){
 }
 
 /* ================= СПРАЙТИ-ШАР (assets/sp) ================= */
-var SPM={"poplar":[158,324],"tree_m":[235,316],"tree_l":[336,356],"birch_m":[194,334],"birch_l":[225,375],"tree_l2":[335,401],"tree_young":[236,256],"tree_s":[155,257],"poplar_au":[162,331],"tree_m_au":[238,320],"tree_l_au":[302,356],"birch_m_au":[200,337],"birch_l_au":[227,387],"tree_l2_au":[304,401],"tree_s_au":[137,204],"tree_s2_au":[172,254],"spruce_l":[295,521],"spruce_m":[283,416],"bush_a":[218,200],"bush_b":[263,224],"hedge":[337,280],"bush_c":[351,245],"bed_red":[424,244],"bed_yellow":[423,224],"bed_blue":[422,225],"bench_g1":[351,333],"bench_o1":[352,335],"lamp_old":[126,647],"lamp_led":[212,668],"stop_a":[400,395],"bin_a":[138,195],"bench_g2":[352,333],"bench_o2":[353,333],"bin_b":[146,201],"kiosk_a":[279,315],"fence_a":[270,320],"bench_g3":[353,335],"bench_o3":[353,340],"lamp_old2":[124,659],"lamp_led2":[176,648],"stop_b":[333,356],"kiosk_b":[320,357],"fence_b":[277,325],"bin_c":[139,196],"bench_o4":[355,341],"stop_c":[327,350],"kiosk_c":[312,351],"fence_c":[277,326],"bench_g4":[339,312],"bin_d":[137,195],"slide":[389,412],"swing_a":[356,415],"sandbox_a":[377,406],"sandbox_b":[377,405],"swing_b":[357,414],"sandbox_c":[377,405],"monument":[324,476],"fountain_f3":[347,387],"flowerclock":[358,243],"fountain_f0":[347,272],"fountain_f1":[346,273],"fountain_f2":[346,300],"fountain2_f2":[347,310],"fountain2_f3":[348,423],"fountain_tier":[346,341],"fountain2_f0":[346,272],"fountain2_f1":[347,266],"fountain3_f2":[346,284],"school_a":[1027,660],"zhk_blue":[297,690],"zhk_green":[315,694],"zhk_red":[312,694],"school_b":[1027,661],"crane_a":[730,703],"crane_b":[711,706],"trc_a":[1052,772,932,712],"trc_b":[1215,786,1147,726],"trc_c":[1215,714,1095,714],"trc_d":[1243,717,1164,697]},SPG={"grass_a":[617,324,153,157],"pavers_a":[613,320,155,155],"cobble_a":[615,321,155,155],"parking_a":[615,322,155,154],"grass_b":[616,359,181,182],"pavers_b":[613,359,184,181],"cobble_b":[614,359,181,181],"parking_b":[614,359,180,180],"concrete_a":[614,350,171,171],"field_a":[613,351,173,172],"grass_path":[615,350,170,170],"waste_a":[615,350,170,171],"concrete_b":[613,334,154,153],"field_b":[613,334,153,153],"grass_gravel":[614,336,153,154],"waste_b":[613,335,154,155]},SPI={},SPSC={},SPREADY=false;
+var SPM={"poplar":[158,324],"tree_m":[235,316],"tree_l":[336,356],"birch_m":[194,334],"birch_l":[225,375],"tree_l2":[335,401],"tree_young":[236,256],"tree_s":[155,257],"poplar_au":[162,331],"tree_m_au":[238,320],"tree_l_au":[302,356],"birch_m_au":[200,337],"birch_l_au":[227,387],"tree_l2_au":[304,401],"tree_s_au":[137,204],"tree_s2_au":[172,254],"spruce_l":[295,521],"spruce_m":[283,416],"bush_a":[218,200],"bush_b":[263,224],"hedge":[337,280],"bush_c":[351,245],"bed_red":[424,244],"bed_yellow":[423,224],"bed_blue":[422,225],"bench_g1":[351,333],"bench_o1":[352,335],"lamp_old":[126,647],"lamp_led":[212,668],"stop_a":[400,395],"bin_a":[138,195],"bench_g2":[352,333],"bench_o2":[353,333],"bin_b":[146,201],"kiosk_a":[279,315],"fence_a":[270,320],"bench_g3":[353,335],"bench_o3":[353,340],"lamp_old2":[124,659],"lamp_led2":[176,648],"stop_b":[333,356],"kiosk_b":[320,357],"fence_b":[277,325],"bin_c":[139,196],"bench_o4":[355,341],"stop_c":[327,350],"kiosk_c":[312,351],"fence_c":[277,326],"bench_g4":[339,312],"bin_d":[137,195],"slide":[389,412],"swing_a":[356,415],"sandbox_a":[377,406],"sandbox_b":[377,405],"swing_b":[357,414],"sandbox_c":[377,405],"monument":[324,476],"fountain_f3":[347,387],"flowerclock":[358,243],"fountain_f0":[347,272],"fountain_f1":[346,273],"fountain_f2":[346,300],"fountain2_f2":[347,310],"fountain2_f3":[348,423],"fountain_tier":[346,341],"fountain2_f0":[346,272],"fountain2_f1":[347,266],"fountain3_f2":[346,284],"school_a":[1027,660],"zhk_blue":[297,690],"zhk_green":[315,694],"zhk_red":[312,694],"school_b":[1027,661],"crane_a":[730,703],"crane_b":[711,706],"trc_a":[1052,772,932,712],"trc_b":[1215,786,1147,726],"trc_c":[1215,714,1095,714],"trc_d":[1243,717,1164,697],"car_00":[323,238],"car_02":[326,222],"car_06":[367,237],"car_08":[368,226],"car_12":[354,291],"car_14":[355,291],"car_18":[364,281],"car_20":[369,285],"car_24":[368,282],"car_27":[366,281]},SPG={"grass_a":[617,324,153,157],"pavers_a":[613,320,155,155],"cobble_a":[615,321,155,155],"parking_a":[615,322,155,154],"grass_b":[616,359,181,182],"pavers_b":[613,359,184,181],"cobble_b":[614,359,181,181],"parking_b":[614,359,180,180],"concrete_a":[614,350,171,171],"field_a":[613,351,173,172],"grass_path":[615,350,170,170],"waste_a":[615,350,170,171],"concrete_b":[613,334,154,153],"field_b":[613,334,153,153],"grass_gravel":[614,336,153,154],"waste_b":[613,335,154,155]},SPI={},SPSC={},SPREADY=false;
+var SHN=['roads_0','roads_1','roads_2','roads_3','bridges','parking'],RCW=462,RCH=243,BCH=285,BMG=24;
 var SPDEC={bench:1,lamp:1,led:1,stop:1,play:1,fountain:1,mon:1};
 function loadSprites(){
   if(typeof Image==='undefined')return;
-  var names=Object.keys(SPM).concat(Object.keys(SPG)),left=names.length;
+  var names=Object.keys(SPM).concat(Object.keys(SPG)).concat(SHN),left=names.length;
   names.forEach(function(n){
     var im=new Image();
     im.onload=function(){
@@ -1453,7 +1454,56 @@ function spScaled(n,k,dim){
   if(dim){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(30,50,70,.58)';g.fillRect(0,0,w,h);}
   SPSC[key]=c;return c;
 }
+function spCell(sh,idx,cw,ch,k,dim){
+  var key=sh+'|'+idx+'|'+k.toFixed(4)+(dim?'d':''),c=SPSC[key];if(c)return c;
+  var e=SPI[sh];if(!e)return null;
+  var w=Math.max(1,Math.round(cw*k)),h=Math.max(1,Math.round(ch*k));
+  c=mkCanvas(w,h);var g=c.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.drawImage(e.img,idx*cw,0,cw,ch,0,0,w,h);
+  if(dim){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(30,50,70,.58)';g.fillRect(0,0,w,h);}
+  SPSC[key]=c;return c;
+}
+function spRoad(o,X,Y,sx,sy,z,dim){
+  var k=32*z/RCW,c;
+  if(o.t==='B'){
+    var ax=(nbRoad(X-1,Y)||nbRoad(X+1,Y))?0:1,bs=o.c<45?1:0;
+    c=spCell('bridges',ax*2+bs,RCW,BCH,k,dim);if(!c)return;
+    mx.drawImage(c,Math.round(sx-c.width/2),Math.round(sy-BMG*k));
+  } else {
+    var m=(nbRoad(X-1,Y)?1:0)|(nbRoad(X+1,Y)?2:0)|(nbRoad(X,Y-1)?4:0)|(nbRoad(X,Y+1)?8:0);
+    var st=(o.by==='me'&&o.q<.5&&o.c>55)?3:(o.c>=62?0:(o.c>=38?1:2));
+    c=spCell('roads_'+st,m,RCW,RCH,k,dim);if(!c)return;
+    mx.drawImage(c,Math.round(sx-c.width/2),Math.round(sy));
+  }
+}
+var VEH=[['car_00','car_02',0],['car_06','car_08',0],['car_12','car_14',0],['car_18','car_20',0],['car_24','car_27',1]],VTY=[0,1,2,0,1,3,4,1];
+function spVeh(vt,head,px,py,z,wm,dim){
+  var v=VEH[vt],bus=v[2],n,fl;
+  if(head==='sw'){n=v[0];fl=bus?1:0;} else if(head==='se'){n=v[0];fl=bus?0:1;}
+  else if(head==='nw'){n=v[1];fl=bus?1:0;} else {n=v[1];fl=bus?0:1;}
+  if(!SPM[n])return;
+  var k=32*z*wm/620,c=fl?spScaledF(n,k,dim):spScaled(n,k,dim);if(!c)return;
+  mx.drawImage(c,Math.round(px-c.width/2),Math.round(py-c.height*.78));
+}
+function parkInfo(o,X,Y){
+  if(!o||o.t!=='Y')return null;
+  var h=hashXY(X,Y),zn=o.zn;
+  if(zn==='mall'||(zn==='sleeper'&&h%5===0)||(zn==='business'&&h%4===0))return {or:(h>>>5)&1,st:o.c<50?1:0,h:h};
+  return null;
+}
+function spPark(pk,sx,sy,z,dim){
+  var L=[],row,kk;
+  for(row=0;row<2;row++)for(kk=0;kk<4;kk++){
+    var r=((Math.imul(pk.h,2654435761)+Math.imul(kk+1+row*5,40503))>>>0)%100;
+    if(r>=60)continue;
+    var ub=.05+(kk+.5)*.225,vb=row?.775:.225,fx=pk.or?vb:ub,fy=pk.or?ub:vb,hd=pk.or?(row?'se':'nw'):(row?'sw':'ne');
+    L.push([fx+fy,fx,fy,hd,VTY[r%8]===4?0:VTY[r%8]]);
+  }
+  L.sort(function(a,b){return a[0]-b[0]});
+  L.forEach(function(e){spVeh(e[4],e[3],sx+(e[1]-e[2])*16*z,sy+(e[1]+e[2])*8*z+3*z,z,.47,dim);});
+}
 function spGround(n,sx,sy,z,dim){
+  if(n.charAt(0)==='P'){var c0=spCell('parking',+n.slice(2),RCW,RCH,32*z/RCW,dim);if(c0)mx.drawImage(c0,Math.round(sx-c0.width/2),Math.round(sy));return;}
   var g=SPG[n],k=32*z/g[0],c=spScaled(n,k,dim);if(!c)return;
   mx.drawImage(c,Math.round(sx-c.width/2),Math.round(sy+8*z-g[2]*k));
 }
@@ -1499,6 +1549,7 @@ function groundSp(o,X,Y){
   if(t==='R'||t==='B'||t==='W')return null;
   if(t==='H'&&!(o.bt&&ATL[o.bt]))return null;
   if(t==='P')return (h&1)?'grass_path':'grass_gravel';
+  var pk0=parkInfo(o,X,Y);if(pk0)return 'PK'+(pk0.or*2+pk0.st);
   if(t==='L')return 'waste_'+p;
   if(!o)return 'grass_'+p;
   if(z==='centre'||z==='business')return 'cobble_'+p;
@@ -1542,8 +1593,9 @@ function spOver(o,X,Y,sx,sy,z,dim,now){
     if(h%5===0)spObj('bush_c',sx,sy,z,dim,KP,.55,.55,.7);
     else if(h%7===0)spObj('tree_young',sx,sy,z,dim,KP,.5,.5,.35);
   } else if(t==='Y'){
-    var zn=o.zn;
-    if(zn==='private'){
+    var zn=o.zn,pk=parkInfo(o,X,Y);
+    if(pk){spPark(pk,sx,sy,z,dim);}
+    else if(zn==='private'){
       var gv=h%5;
       if(gv===0){spObj('tree_m',sx,sy,z,dim,KP,.3,.3,.75);spObj('bush_b',sx,sy,z,dim,KP,.7,.72,.6);}
       else if(gv===1){spObj('bed_red',sx,sy,z,dim,KP,.45,.5,.55);spObj('tree_s',sx,sy,z,dim,KP,.78,.28,.8);}
@@ -1608,6 +1660,7 @@ function buildCarMap(){
 }
 function drawCarPx(x,y,c,z,W,H){
   var wx=(x-y)*16,wy=(x+y)*8,sx=Math.round((wx-S.cam.x)*z+W/2),sy=Math.round((wy-S.cam.y)*z+H/2);
+  if(SPREADY){var vt=VTY[(((c.a*7+Math.floor(c.lane*3))%8)+8)%8],hd=c.ax==='x'?(c.dir>0?'se':'nw'):(c.dir>0?'sw':'ne');spVeh(vt,hd,sx,sy+2*z,z,.86,false);return;}
   var w=Math.max(2,Math.round(4*z)),h=Math.max(1,Math.round(2*z));
   mx.fillStyle='#111';mx.fillRect(sx-(w>>1),sy-h,w,h+1);
   mx.fillStyle=c.col;mx.fillRect(sx-(w>>1)+(c.ax==='x'?0:0),sy-h,w,Math.max(1,h-0));
@@ -1648,9 +1701,9 @@ function drawMap(now){
       Y=s-X;
       var sx=Math.round(((X-Y)*16-cam.x)*z+W/2),sy=Math.round(((X+Y)*8-cam.y)*z+H/2),dx=sx-ox,dy=sy-oyy;
       if(dx>W||dx+tw<0||dy>H||dy+th<0)continue;
-      var o=S.objs[Y*N+X],atl=(o&&o.t==='H'&&o.bt&&ATL[o.bt])?ATL[o.bt]:null,gsp=SPREADY?groundSp(o,X,Y):null,spr=gsp?null:(atl?groundH(o,X,Y):spriteFor(o,X,Y)),key,iz=inZone(X,Y);
-      if(!iz&&!gsp){key=atl?('GH'+(o.zn||'')+((X+Y)%2)):(o?o.sk:('G'+((X+Y)%2)));spr=dimSprite(key,spr);}
-      if(gsp){spGround(gsp,sx,sy,z,!iz);spOver(o,X,Y,sx,sy,z,!iz,now);}else{mx.drawImage(spr,dx,dy,tw,th);if(SPREADY&&o&&o.dec&&SPDEC[o.dec.k])spOver(o,X,Y,sx,sy,z,!iz,now);}
+      var o=S.objs[Y*N+X],atl=(o&&o.t==='H'&&o.bt&&ATL[o.bt])?ATL[o.bt]:null,gsp=SPREADY?groundSp(o,X,Y):null,rdt=SPREADY&&o&&(o.t==='R'||o.t==='B'),spr=(gsp||rdt)?null:(atl?groundH(o,X,Y):spriteFor(o,X,Y)),key,iz=inZone(X,Y);
+      if(!iz&&!gsp&&!rdt){key=atl?('GH'+(o.zn||'')+((X+Y)%2)):(o?o.sk:('G'+((X+Y)%2)));spr=dimSprite(key,spr);}
+      if(gsp){spGround(gsp,sx,sy,z,!iz);spOver(o,X,Y,sx,sy,z,!iz,now);}else if(rdt){spRoad(o,X,Y,sx,sy,z,!iz);if(o.dec&&SPDEC[o.dec.k])spOver(o,X,Y,sx,sy,z,!iz,now);}else mx.drawImage(spr,dx,dy,tw,th);
       if(atl&&!(gsp&&o.bt==='mall'&&(trcGroup(o,X,Y)||X%8===4||Y%8===4)))drawAtl(o,X,Y,sx,sy,z,!iz);
       /* динамічні деталі */
       if(o){
