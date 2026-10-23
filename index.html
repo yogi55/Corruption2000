@@ -204,6 +204,11 @@ var DEC={
   led:{n:'LED-освітлення проспекту',base:450,real:.4,hint:'Енергозбереження на папері, а лампочки колишні.'},
   mon:{n:'Пам\'ятник',base:900,real:.25,hint:'Бронза за ціною золота, виливають із чого знайдуть. Приймають усі.'}
 };
+var EQ={truck:{n:'Самоскид',c:60,use:'двори, майданчики'},exc:{n:'Екскаватор',c:110,use:'сквери, фонтани, двори'},paver:{n:'Асфальтоукладальник',c:160,use:'дороги'},crane:{n:'Автокран',c:220,use:'мости, школи, фасади, ЖК'}};
+function reqEq(o){if(o.kind!=='tender')return null;if(o.dec)return {stop:'crane',fountain:'exc',led:'crane',mon:'crane',play:'truck'}[o.dec]||'truck';if(o.dev)return 'crane';return {R:'paver',B:'crane',H:'crane',S:'crane',P:'exc',Y:'exc'}[o.t]||null;}
+function eqN(){return Object.keys(S.eq||{}).filter(function(k){return S.eq[k]}).length}
+function eqHeat(){var n=eqN();return n>=3?.35:(n===2?.45:(n===1?.6:1))}
+function eqTag(o){var k=reqEq(o);return k?'<span class="tag" style="background:'+(S.eq[k]?'#b9f0c6':'#ffd9d4')+'">'+EQ[k].n+(S.eq[k]?' ✓':'')+'</span>':''}
 var DEVD={
   lot:{real:.55,ang:3,risk:3,log:'Виріс новий ЖК на пустирі. Сусіди питають про сонце у вікнах.',hint:'Пайова участь у забудові: ти в частці з забудовником. Дозволи теж «в частці».'},
   yard:{real:.5,ang:7,risk:5,log:'Точкова забудова у дворі: мешканці вийшли з плакатами, а будівельники з кранами.',hint:'Де був двір, там тепер ЖК «Затишний двір». Майданчик перенесемо. Колись.'},
@@ -297,7 +302,7 @@ function wyOf(X,Y){return (X+Y)*8}
 function newGame(){
   S={speed:0,tick:0,month:1,cash:70,risk:6,contacts:8,fame:0,rank:0,angry:0,inflate:0,rt:50,
      objs:[],offers:[],pending:[],castle:[],log:[],over:false,tab:'offers',zoom:1,cam:{x:0,y:0},
-     audits:[],devs:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
+     audits:[],devs:0,eq:{},fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
   S.objs=genWorld();
   cars=genCars();
   S.cam={x:wxOf(HOME.x,HOME.y),y:wyOf(HOME.x,HOME.y)+8};
@@ -358,6 +363,7 @@ function chance(){
   if(o.kind==='direct')p=.22+S.contacts*.004+D.bribe*1.6;
   else if(o.kind==='tender')p=.18+S.contacts*.003+D.bribe*1.3+(D.tailor?.22:0)-o.comp;
   else p=.2+S.contacts*.004+D.bribe*1.4-o.comp;
+  var ek=reqEq(o);if(ek)p+=S.eq[ek]?.06:-.1;
   return clamp(p,.05,.95);
 }
 function payAmt(){return Math.round(D.off.budget*(D.infl?1.25:1))}
@@ -368,7 +374,7 @@ function fopOk(f){
 }
 function openDeal(off){
   if(S.over||!off)return;
-  D={off:off,step:1,bribe:0,tailor:false,fop:0,tier:1,infl:false};
+  D={off:off,step:1,bribe:0,tailor:false,fop:0,tier:1,infl:false,eqMode:'buy'};
   $('dealWrap').hidden=false;renderDeal();
   var b=$('deal').querySelector('button');if(b)b.focus();
 }
@@ -379,6 +385,7 @@ function renderDeal(){
   h+='<p class="sub"><span class="tag t-'+o.kind+'">'+KIND[o.kind]+'</span>'+o.name+'</p>';
   if(o.dec||o.dev)h+='<p class="note">'+(o.dec?DEC[o.dec]:DEVD[o.dev]).hint+' Маржа ніші: <b>'+(rf<.4?'жирна':'пристойна')+'</b>.</p>';
   if(D.step===1){
+    var rk=reqEq(o);if(rk)h+='<p class="note">Потрібна техніка: <b>'+EQ[rk].n+'</b>. '+(S.eq[rk]?'Є в парку: +6% до шансу.':'Нема: −10% до шансу. Після перемоги доведеться купити або орендувати, можна з авансу.')+'</p>';
     h+='<p>Хто вирішує: <b>'+GATE[o.kind]+'</b>. '+(o.kind==='auction'?'Місце під кіоск: ринкова вартість '+o.budget+' тис., на аукціоні віддають за '+o.price+' тис. Рента 7 тис. щомісяця.':'Бюджет: <b>'+o.budget+' тис. ₴</b>. '+(o.kind==='direct'?'До 100 тис. тендера нема, договір віддають «своєму».':'Є ще конкуренти, їхня сила впливає на шанс.'))+'</p>';
     h+='<div class="sec">Як заходиш</div><div class="list">';
     BRIBES.forEach(function(b,i){
@@ -397,7 +404,7 @@ function renderDeal(){
       h+='<div class="acts"><button class="btn primary" data-a="sign"'+(S.cash<up?' disabled':'')+'>Оформити</button><button class="btn" data-a="cancel">Відмовитись</button></div>';
       if(S.cash<up)h+='<p class="note" style="margin-top:6px">Не вистачає готівки: треба '+up+' тис.</p>';
     } else {
-      var t=TIERS[D.tier],costNow=Math.round(o.budget*t.cost*rf),up2=costNow+bribeAmt+tailorAmt,prof=pay-up2,avans=Math.round(pay*.25);
+      var eqk=reqEq(o),eqc=(eqk&&!S.eq[eqk])?(D.eqMode==='rent'?Math.round(EQ[eqk].c*.3):EQ[eqk].c):0,t=TIERS[D.tier],costNow=Math.round(o.budget*t.cost*rf),up2=costNow+bribeAmt+tailorAmt+eqc,prof=pay-up2+(eqc&&D.eqMode!=='rent'?eqc:0),avans=Math.round(pay*.25);
       var okFops=S.fops.filter(fopOk);
       if(okFops.length&&!fopOk(S.fops[D.fop]))D.fop=S.fops.indexOf(okFops[0]);
       h+='<p><b>Договір твій.</b> Обери, на кого оформити і як робити.</p>';
@@ -408,6 +415,8 @@ function renderDeal(){
       });
       h+='</div>';
       if(!okFops.length)h+='<p class="note" style="margin-top:6px">Нема на кого оформити: ліміт ФОПів вичерпано. Купи ще один ФОП або візьми менший договір.</p>';
+      if(eqk&&!S.eq[eqk])h+='<div class="sec">Техніка: '+EQ[eqk].n+'</div><div class="list"><button class="opt" data-a="eqm" data-v="buy" aria-pressed="'+(D.eqMode!=='rent')+'"><b>Купити · '+EQ[eqk].c+' тис.</b><small>Лишається в парку. Куплена під тендер: підозра +3.</small></button><button class="opt" data-a="eqm" data-v="rent" aria-pressed="'+(D.eqMode==='rent')+'"><b>Орендувати у кума · '+Math.round(EQ[eqk].c*.3)+' тис.</b><small>Тільки на цей договір. Фірма-одноденка: підозра +5.</small></button></div>';
+      else if(eqk)h+='<p class="note">Техніка: '+EQ[eqk].n+' є в парку.</p>';
       h+='<div class="sec">Як виконуєш</div><div class="list">';
       TIERS.forEach(function(tt,i){
         h+='<button class="opt" data-a="tier" data-v="'+i+'" aria-pressed="'+(D.tier===i)+'"><b>'+tt.n+'</b><small>Витрати ≈ '+Math.round(tt.cost*rf*100)+'% бюджету · '+tt.d+'</small></button>';
@@ -420,7 +429,8 @@ function renderDeal(){
         '<div><span>Роботи зараз</span><span class="neg">−'+costNow+'</span></div>'+
         (bribeAmt?'<div><span>Відкат</span><span class="neg">−'+bribeAmt+'</span></div>':'')+
         (tailorAmt?'<div><span>Умови під себе</span><span class="neg">−'+tailorAmt+'</span></div>':'')+
-        '<div class="tot"><span>Прибуток</span><span class="'+(prof>=0?'pos':'neg')+'">'+(prof>=0?'+':'')+prof+' тис.</span></div></div>';
+        (eqc?'<div><span>'+(D.eqMode==='rent'?'Оренда техніки':'Купівля техніки')+'</span><span class="neg">−'+eqc+'</span></div>':'')+
+        '<div class="tot"><span>Прибуток'+(eqc&&D.eqMode!=='rent'?' (техніка в активах)':'')+'</span><span class="'+(prof>=0?'pos':'neg')+'">'+(prof>=0?'+':'')+prof+' тис.</span></div></div>';
       var short=S.cash<up2-avans;
       h+='<div class="acts"><button class="btn primary" data-a="sign"'+((short||!okFops.length)?' disabled':'')+'>Підписати акт</button><button class="btn" data-a="cancel">Відмовитись</button></div>';
       if(short)h+='<p class="note" style="margin-top:6px">Не вистачає готівки: на старті треба '+(up2-avans)+' тис. (витрати мінус аванс). Спробуй дешевший варіант виконання.</p>';
@@ -446,9 +456,10 @@ function signDeal(){
     floaters.push({X:o.x,Y:o.y,txt:'Кіоск твій',col:'#d6c8ff',t0:performance.now()});
     addLog('МАФ оформлено. Тепер щомісяця +7 тис., поки не прийдуть із перевіркою.','good');
   } else {
-    var t=TIERS[D.tier],f=S.fops[D.fop],pay=payAmt(),rfs=realF(o),costNow=Math.round(o.budget*t.cost*rfs),up2=costNow+bribeAmt+tailorAmt,avans=Math.round(pay*.25);
+    var t=TIERS[D.tier],f=S.fops[D.fop],pay=payAmt(),rfs=realF(o),eqk=reqEq(o),eqc=(eqk&&!S.eq[eqk])?(D.eqMode==='rent'?Math.round(EQ[eqk].c*.3):EQ[eqk].c):0,costNow=Math.round(o.budget*t.cost*rfs),up2=costNow+bribeAmt+tailorAmt+eqc,avans=Math.round(pay*.25);
     if(S.cash<up2-avans||!fopOk(f))return;
     S.cash-=up2;S.cash+=avans;f.used+=pay;
+    if(eqc){if(D.eqMode==='rent'){S.risk+=5;addLog('Техніку орендовано у кума на день тендера. Фірма-одноденка пішла в минуле.','');}else{S.eq[eqk]=true;S.risk+=3;addLog('Куплено '+EQ[eqk].n.toLowerCase()+' під тендер: за тиждень до перемоги.','');}}
     S.pending.push({due:S.month+(o.kind==='direct'?1:2),amt:pay-avans});
     if(o.dec){obj.dec={k:o.dec,c:70+30*t.q,q:t.q};obj.sk=null;}else{obj.c=70+30*t.q;obj.q=t.q;obj.by='me';obj.sk=null;}
     S.fame+=t.fame+(o.budget>=200?1:0);
@@ -490,7 +501,7 @@ function nextMonth(){
   if(idx===8&&weak.length+bad>0)addLog('Почалась зима. Те, що ти клав у жовтні, дякує за підробіток.','bad');
   S.fops.forEach(function(f){
     f.lastUsed=f.used;
-    if(!f.isCo)f.heat=f.heat*.7+(f.used/FOP_LIMIT)*(f.equip?.35:1);
+    if(!f.isCo)f.heat=f.heat*.7+(f.used/FOP_LIMIT)*eqHeat();
     else f.heat=f.heat*.7+f.used/450+S.inflate*.1;
     f.used=0;
   });
@@ -678,17 +689,19 @@ function ui(){
   /* заявки: найближчі до камери */
   var ct=centerTile(),sorted=S.offers.slice().sort(function(a,b){return Math.hypot(a.x-ct.x,a.y-ct.y)-Math.hypot(b.x-ct.x,b.y-ct.y);}).slice(0,10),oh='';
   sorted.forEach(function(o){
-    oh+='<div class="offer" data-offer="'+S.offers.indexOf(o)+'" style="padding:0"><button class="offer" data-open="'+S.offers.indexOf(o)+'" style="border:0;box-shadow:none;flex:1;min-width:0;background:transparent"'+(S.over?' disabled':'')+'><span class="l"><b>'+o.title+'</b><small><span class="tag t-'+o.kind+'">'+KIND[o.kind]+'</span>'+o.name+'</small></span><span class="amt">'+(o.kind==='auction'?o.price+' тис.':o.budget+' тис.')+'</span></button><button class="btn small loc" data-loc="'+S.offers.indexOf(o)+'" aria-label="Показати на карті" title="Показати на карті">◎</button></div>';
+    oh+='<div class="offer" data-offer="'+S.offers.indexOf(o)+'" style="padding:0"><button class="offer" data-open="'+S.offers.indexOf(o)+'" style="border:0;box-shadow:none;flex:1;min-width:0;background:transparent"'+(S.over?' disabled':'')+'><span class="l"><b>'+o.title+'</b><small><span class="tag t-'+o.kind+'">'+KIND[o.kind]+'</span>'+eqTag(o)+o.name+'</small></span><span class="amt">'+(o.kind==='auction'?o.price+' тис.':o.budget+' тис.')+'</span></button><button class="btn small loc" data-loc="'+S.offers.indexOf(o)+'" aria-label="Показати на карті" title="Показати на карті">◎</button></div>';
   });
   $('offers').innerHTML=oh||'<p class="note">У твоєму районі поки все гаразд. Почекай, асфальт сам зіпсується.</p>';
   $('offerNote').textContent='Показую 10 найближчих до камери з '+S.offers.length+'. '+(S.rank===0?'Поки що доступні лише дрібні договори до 100 тис.: ями й двори.':(S.rank===1?'ТОВ бере тендери. ФОПи годяться лише на прямі договори.':''));
   var fh='';
   S.fops.forEach(function(f,i){
     var hot=f.heat>1.2;
-    fh+='<div class="fop"><div class="row"><b>'+f.name+'</b><span class="heat'+(hot?' hot':'')+'">'+(f.isCo?'є техніка і штат':(f.equip?'техніка є':'без техніки')+' · увага '+(hot?'висока':(f.heat>.5?'є':'низька')))+'</span></div>'+
-      (f.isCo?'':'<div class="pb"><i style="width:'+clamp(f.used/FOP_LIMIT*100,0,100)+'%"></i></div><div class="row"><span class="note">Обіг місяця: '+Math.round(f.used)+' з '+FOP_LIMIT+' тис.</span>'+(f.equip?'':'<button class="btn small" data-fop="equip" data-i="'+i+'"'+(S.cash<35||S.over?' disabled':'')+'>Техніка · 35</button>')+'</div>')+'</div>';
+    fh+='<div class="fop"><div class="row"><b>'+f.name+'</b><span class="heat'+(hot?' hot':'')+'">'+(f.isCo?'є техніка і штат':(eqN()?'парк є':'без техніки')+' · увага '+(hot?'висока':(f.heat>.5?'є':'низька')))+'</span></div>'+
+      (f.isCo?'':'<div class="pb"><i style="width:'+clamp(f.used/FOP_LIMIT*100,0,100)+'%"></i></div><div class="row"><span class="note">Обіг місяця: '+Math.round(f.used)+' з '+FOP_LIMIT+' тис.</span>'+''+'</div>')+'</div>';
   });
   if(S.fops.filter(function(f){return !f.isCo;}).length<6)fh+='<button class="fopb opt" data-fop="new"'+(S.cash<12||S.over?' disabled':'')+'><b>+ Новий ФОП на родича</b><small>12 тис. · свій ліміт '+FOP_LIMIT+' тис. на місяць</small></button>';
+  fh+='<div class="sec">Автопарк</div><p class="note">Тендери потребують техніки: з нею +6% до шансу, без неї −10%. Парк знижує увагу податкової (зараз ×'+eqHeat().toFixed(2)+'). Купуєш тут або під час тендера, навіть з авансу.</p>';
+  Object.keys(EQ).forEach(function(k){fh+='<button class="up'+(S.eq[k]?' own':'')+'" data-eq="'+k+'"'+((S.eq[k]||S.cash<EQ[k].c||S.over)?' disabled':'')+'><span><b>'+EQ[k].n+'</b><small>'+EQ[k].use+'</small></span><span>'+(S.eq[k]?'є':EQ[k].c+' тис.')+'</span></button>';});
   $('fops').innerHTML=fh;
   var nr=nextReq(),ch='<p style="margin:0 0 8px"><b>'+RANKS[S.rank]+'</b> · слава '+S.fame+' · радіус району '+(S.rank>=3?'усе місто':ZR[S.rank]+' кварталів')+'</p>';
   ch+=nichesNote();
@@ -717,6 +730,8 @@ $('offers').addEventListener('click',function(e){
   var l=e.target.closest('[data-loc]');if(l){var o=S.offers[+l.dataset.loc];if(o)centerOn(o.x+.5,o.y+.5);}
 });
 $('fops').addEventListener('click',function(e){
+  var q=e.target.closest('[data-eq]');
+  if(q&&!S.over){var kk=q.dataset.eq;if(!S.eq[kk]&&S.cash>=EQ[kk].c){S.cash-=EQ[kk].c;S.eq[kk]=true;S.risk=clamp(S.risk+1,0,100);addLog('Куплено: '+EQ[kk].n.toLowerCase()+'. Оформлено на тітку, звісно.','');}ui();return;}
   var b=e.target.closest('[data-fop]');if(!b||S.over)return;
   if(b.dataset.fop==='equip'){var f=S.fops[+b.dataset.i];if(f&&!f.equip&&S.cash>=35){S.cash-=35;f.equip=true;addLog('Орендували екскаватор для звітності: «'+f.name+'» тепер виглядає серйозно.','good');}}
   else if(b.dataset.fop==='new'&&S.cash>=12){
@@ -748,6 +763,7 @@ $('deal').addEventListener('click',function(e){
   else if(a==='cancel')return closeDeal();
   else if(a==='fop')D.fop=v;
   else if(a==='tier')D.tier=v;
+  else if(a==='eqm')D.eqMode=b.dataset.v;
   else if(a==='infl'){D.infl=!D.infl;var f=S.fops[D.fop];if(f&&!fopOk(f)){var ok=S.fops.filter(fopOk)[0];if(ok)D.fop=S.fops.indexOf(ok);}}
   else if(a==='sign')return signDeal();
   renderDeal();
