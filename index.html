@@ -359,11 +359,11 @@ var BTD={
   mall:{title:'Благоустрій території ТЦ',k:2.5,min:2,real:.55,h:22}
 };
 var ZTPL={
-  centre:[['HHHHHHH','HHHHHHH','HHHYHHH','HHYPYHH','HHHYHHH','HHHHHHH','HHHHHHH'],['HHHHHHH','HHKHHHH','HHHHHHH','HYYPYYH','HHHHHHH','HHHHHSH','HHHHHHH']],
+  centre:[['HHHHHHH','HHHHHHH','HHYYYHH','HHYPYHH','HHYYYHH','HHHHHHH','HHHHHHH'],['HHHHHHH','HHHYHHH','HHYYYHH','HYYPYYH','HHYYYHH','HHHYHHH','HHHHHHH'],['HHHHHHH','HYYYYHH','HYPPYHH','HYPPYHH','HYYKYHH','HHHYHHH','HHHHHHH']],
   business:[['HHYHHYH','HHYHHYH','YYYYYYY','HHPPPHH','HHPPPHH','YYYYYYY','HHYHHYH']],
-  sleeper:[['HHHYYPP','YYYYYPP','HHHYYYY','HHHYSSY','YYYYSSY','PPYHHHH','PPYHHHH'],['HHYYHHY','HHYYHHY','YYYPPYY','HHYPPYH','HHYYYYH','YYYYHHH','PPYYHHH']],
+  sleeper:[['HHHYHHH','HYYYYYH','YYSSPPY','YYSSPPY','HYYPPYH','HYYYYYH','HHHYHHH'],['HHYYHHY','HHYYHHY','YYYPPYY','HHYPPYH','HHYYYYH','YYYYHHH','PPYYHHH']],
   industrial:[['HHHHYHH','HHHHYHH','YYYYYYY','HHHHYLL','HHHHYLL','YYYYYYY','HHYYYHH']],
-  private:[['HYHYHYH','YYYYYYY','HYHYHYH','YYYYYYY','HYHYHYH','YYYYYYY','HYHYHYH']],
+  private:[['HYHYHYH','YYYYYYY','HYHYHYH','YYYYYYY','HYHYHYH','YYYYYYY','HYHYHYH'],['YHYYHYY','YYYYYYY','HYYHYYH','YYYYYYY','YHYPPYH','YYYPPYY','HYYYYHY']],
   mall:[['YYYYYYY','YHHHHHY','YHHHHHY','YHHHHHY','YHHHHHY','YHHHHHY','YYYYYYY']]
 };
 var ZNAME={centre:'центр',business:'ділова зона',sleeper:'спальний район',industrial:'промзона',private:'приватний сектор',mall:'торговий квартал',mixed:'змішана забудова'};
@@ -1465,6 +1465,20 @@ function spObj(n,sx,sy,z,dim,kref,fx,fy,wmul){
   mx.drawImage(c,Math.round(px-c.width/2),Math.round(py-c.height));
 }
 var KP=425,KF=620,KY=470;
+function tIs(x,y,t){if(x<0||y<0||x>=N||y>=N)return false;var q=S.objs[y*N+x];return !!q&&q.t===t}
+function spScaledF(n,k,dim){
+  var key=n+'|'+k.toFixed(4)+(dim?'d':'')+'f',c=SPSC[key];if(c)return c;
+  var b=spScaled(n,k,dim);if(!b)return null;
+  c=mkCanvas(b.width,b.height);var g=c.getContext('2d');g.translate(b.width,0);g.scale(-1,1);g.drawImage(b,0,0);SPSC[key]=c;return c;
+}
+/* огорожа вздовж ребра клітинки: r/l - вздовж Y (x=1/0), b/t - вздовж X (y=1/0), дзеркальна */
+function spEdge(n,sx,sy,z,dim,e){
+  if(!SPM[n])return;
+  var k=32*z/KF,flip=(e==='b'||e==='t'),c=flip?spScaledF(n,k,dim):spScaled(n,k,dim);if(!c)return;
+  var fx=e==='r'?1:(e==='l'?0:.5),fy=e==='b'?1:(e==='t'?0:.5);
+  var px=sx+(fx-fy)*16*z,py=sy+(fx+fy)*8*z+3*z;
+  mx.drawImage(c,Math.round(px-c.width/2),Math.round(py-c.height));
+}
 function isS(x,y){if(x<0||y<0||x>=N||y>=N)return false;var q=S.objs[y*N+x];return !!q&&q.t==='S'}
 function sBlock(X,Y){
   for(var ox=X-1;ox<=X;ox++)for(var oy=Y-1;oy<=Y;oy++)if(isS(ox,oy)&&isS(ox+1,oy)&&isS(ox,oy+1)&&isS(ox+1,oy+1))return true;
@@ -1485,6 +1499,8 @@ function groundSp(o,X,Y){
     if(z==='private')return (h%6===0)?('field_'+p):('grass_'+p);
     return 'grass_'+p;
   }
+  if(t==='Y'&&z==='private')return (h%4===0)?'pavers_a':(h%7===0?'field_'+p:'grass_'+p);
+  if(t==='Y'&&z==='sleeper')return (h%3===0)?(c<50?'pavers_b':'pavers_a'):'grass_'+p;
   return c<50?'pavers_b':'pavers_a';
 }
 function spOver(o,X,Y,sx,sy,z,dim,now){
@@ -1504,7 +1520,33 @@ function spOver(o,X,Y,sx,sy,z,dim,now){
   } else if(t==='N'){
     spObj(['zhk_blue','zhk_green','zhk_red'][h%3],sx,sy,z,dim,300,.5,.5,1.08);
   } else if(t==='L'){
-    spObj('fence_b',sx,sy,z,dim,KF,.5,.62,1.3);
+    if(!tIs(X+1,Y,'L'))spEdge('fence_b',sx,sy,z,dim,'r');
+    if(!tIs(X,Y+1,'L'))spEdge('fence_b',sx,sy,z,dim,'b');
+    if(!tIs(X-1,Y,'L'))spEdge('fence_b',sx,sy,z,dim,'l');
+    if(!tIs(X,Y-1,'L'))spEdge('fence_b',sx,sy,z,dim,'t');
+    if(h%5===0)spObj('bush_c',sx,sy,z,dim,KP,.55,.55,.7);
+    else if(h%7===0)spObj('tree_young',sx,sy,z,dim,KP,.5,.5,.35);
+  } else if(t==='Y'){
+    var zn=o.zn;
+    if(zn==='private'){
+      var gv=h%5;
+      if(gv===0){spObj('tree_m',sx,sy,z,dim,KP,.3,.3,.75);spObj('bush_b',sx,sy,z,dim,KP,.7,.72,.6);}
+      else if(gv===1){spObj('bed_red',sx,sy,z,dim,KP,.45,.5,.55);spObj('tree_s',sx,sy,z,dim,KP,.78,.28,.8);}
+      else if(gv===2){spObj('bush_a',sx,sy,z,dim,KP,.3,.7,.6);spObj('tree_s_au',sx,sy,z,dim,KP,.7,.3,.8);}
+      else if(gv===3){spObj('bed_yellow',sx,sy,z,dim,KP,.5,.5,.5);spObj('bush_c',sx,sy,z,dim,KP,.25,.3,.5);}
+      else{spObj('birch_m',sx,sy,z,dim,KP,.5,.35,.7);spObj('hedge',sx,sy,z,dim,KP,.5,.8,.35);}
+      if(tIs(X+1,Y,'R'))spEdge('fence_c',sx,sy,z,dim,'r');
+      if(tIs(X,Y+1,'R'))spEdge('fence_c',sx,sy,z,dim,'b');
+      if(tIs(X-1,Y,'R'))spEdge('fence_c',sx,sy,z,dim,'l');
+      if(tIs(X,Y-1,'R'))spEdge('fence_c',sx,sy,z,dim,'t');
+    } else if(zn==='sleeper'&&h%3!==0){
+      var sv=h%4;
+      if(sv===0)spObj('tree_l',sx,sy,z,dim,KP,.5,.5,.9);
+      else if(sv===1){spObj('birch_m',sx,sy,z,dim,KP,.32,.35,.8);spObj('bush_a',sx,sy,z,dim,KP,.7,.7,.55);}
+      else if(sv===2)spObj('tree_m',sx,sy,z,dim,KP,.68,.4,.8);
+    } else if((zn==='centre'||zn==='business')&&h%3===0){
+      spObj(h%2?'tree_s':'tree_m',sx,sy,z,dim,KP,.5,.5,h%2?.8:.7);
+    }
   }
   if(d){
     var k=d.k;
