@@ -493,13 +493,14 @@ var ESV_FOP=1.8,ESV_CO=4,ACC=[{n:'Без бухгалтера',m:0},{n:'Аутс
 function taxRate(f){return (f&&f.isCo?.06:.05)*(S.acc===2?.85:1)}
 function accBase(){var c=0;S.fops.forEach(function(f){c+=(f.isCo?6:1.5)});return c}
 function accCost(lvl){return Math.round(accBase()*ACC[lvl===undefined?S.acc:lvl].m*10)/10}
+function fm(n){return String(n).replace('.',',')}
 function payTaxes(){
   var tax=0,esv=0,fine=0,acc=accCost();
   S.fops.forEach(function(f){tax+=f.used*taxRate(f);esv+=f.isCo?ESV_CO:ESV_FOP;});
   if(S.acc===0)S.fops.forEach(function(f){if(Math.random()<.12){fine+=Math.round(5+Math.random()*15);f.heat+=.4;}});
   var total=Math.round((tax+esv+acc+fine)*10)/10,due=total+S.taxDebt;
   S.lastTax={tax:Math.round(tax),esv:Math.round(esv*10)/10,acc:acc,fine:fine};
-  if(S.cash>=due){S.cash-=due;S.taxDebt=0;addLog('Податки: '+Math.round(tax)+', ЄСВ '+S.lastTax.esv+(acc?', бухгалтер '+acc:'')+(fine?', штраф за звітність '+fine:'')+'. Усього '+Math.round(total)+' тис.',fine?'bad':'');}
+  if(S.cash>=due){S.cash-=due;S.taxDebt=0;addLog('Податки: '+Math.round(tax)+', ЄСВ '+fm(S.lastTax.esv)+(acc?', бухгалтер '+fm(acc):'')+(fine?', штраф за звітність '+fine:'')+'. Усього '+Math.round(total)+' тис.',fine?'bad':'');}
   else{S.taxDebt=Math.round((due-S.cash)*1.1);S.cash=0;S.risk=clamp(S.risk+5,0,100);addLog('Нема чим платити податки: борг '+S.taxDebt+' тис. з пенею. Податкова вже в курсі.','bad');}
 }
 var DEVD={
@@ -1001,8 +1002,8 @@ function ui(){
       (f.isCo?'':'<div class="pb"><i style="width:'+clamp(f.used/FOP_LIMIT*100,0,100)+'%"></i></div><div class="row"><span class="note">Обіг місяця: '+Math.round(f.used)+' з '+FOP_LIMIT+' тис.</span>'+''+'</div>')+'</div>';
   });
   if(S.fops.filter(function(f){return !f.isCo;}).length<6)fh+='<button class="fopb opt" data-fop="new"'+(S.cash<12||S.over?' disabled':'')+'><b>+ Новий ФОП на родича</b><small>12 тис. · свій ліміт '+FOP_LIMIT+' тис. на місяць</small></button>';
-  var bh='<div class="sec">Бухгалтерія і податки</div><p class="note">ФОП: 5% з обігу і ЄСВ '+ESV_FOP+' тис./міс. ТОВ: 6% і штат '+ESV_CO+' тис./міс. Бухгалтер коштує 1,5 тис. за кожен ФОП і 6 за ТОВ. Без нього звітність іноді здають із помилками (штраф). Головбух ×1,8: податки −15%, увага податкової −30%.'+(S.lastTax?' Минулого місяця: податок '+S.lastTax.tax+', ЄСВ '+S.lastTax.esv+(S.lastTax.acc?', бухгалтер '+S.lastTax.acc:'')+(S.lastTax.fine?', штрафи '+S.lastTax.fine:'')+'.':'')+(S.taxDebt?' <b class="neg">Борг по податках: '+S.taxDebt+' тис.</b>':'')+'</p><div class="list">';
-  ACC.forEach(function(a,i){bh+='<button class="opt" data-acc="'+i+'" aria-pressed="'+(S.acc===i)+'"'+(S.over?' disabled':'')+'><b>'+a.n+(i?' · '+accCost(i)+' тис./міс.':'')+'</b><small>'+['Економія, але 12% на місяць на кожну фірму: помилки в звітності.','Усе здають вчасно.','Оптимізація, нижчі податки, менше уваги податкової.'][i]+'</small></button>';});
+  var bh='<div class="sec">Бухгалтерія і податки</div><p class="note">ФОП: 5% з обігу і ЄСВ '+fm(ESV_FOP)+' тис./міс. ТОВ: 6% і штат '+ESV_CO+' тис./міс. Бухгалтер коштує 1,5 тис. за кожен ФОП і 6 за ТОВ. Без нього звітність іноді здають із помилками (штраф). Головбух ×1,8: податки −15%, увага податкової −30%.'+(S.lastTax?' Минулого місяця: податок '+S.lastTax.tax+', ЄСВ '+fm(S.lastTax.esv)+(S.lastTax.acc?', бухгалтер '+fm(S.lastTax.acc):'')+(S.lastTax.fine?', штрафи '+S.lastTax.fine:'')+'.':'')+(S.taxDebt?' <b class="neg">Борг по податках: '+S.taxDebt+' тис.</b>':'')+'</p><div class="list">';
+  ACC.forEach(function(a,i){bh+='<button class="opt" data-acc="'+i+'" aria-pressed="'+(S.acc===i)+'"'+(S.over?' disabled':'')+'><b>'+a.n+(i?' · '+fm(accCost(i))+' тис./міс.':'')+'</b><small>'+['Економія, але 12% на місяць на кожну фірму: помилки в звітності.','Усе здають вчасно.','Оптимізація, нижчі податки, менше уваги податкової.'][i]+'</small></button>';});
   fh=contractsHtml()+bh+'</div>'+fh;
   fh+='<div class="sec">Автопарк</div><p class="note">Тендери потребують техніки: з нею +6% до шансу, без неї −10%. Парк знижує увагу податкової (зараз ×'+eqHeat().toFixed(2)+'). Купуєш тут або під час тендера, навіть з авансу.</p>';
   Object.keys(EQ).forEach(function(k){fh+='<button class="up'+(S.eq[k]?' own':'')+'" data-eq="'+k+'"'+((S.eq[k]||S.cash<EQ[k].c||S.over)?' disabled':'')+'><span><b>'+EQ[k].n+'</b><small>'+EQ[k].use+'</small></span><span>'+(S.eq[k]?'є':EQ[k].c+' тис.')+'</span></button>';});
