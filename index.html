@@ -1465,9 +1465,15 @@ function spObj(n,sx,sy,z,dim,kref,fx,fy,wmul){
   mx.drawImage(c,Math.round(px-c.width/2),Math.round(py-c.height));
 }
 var KP=425,KF=620,KY=470;
+function isS(x,y){if(x<0||y<0||x>=N||y>=N)return false;var q=S.objs[y*N+x];return !!q&&q.t==='S'}
+function sBlock(X,Y){
+  for(var ox=X-1;ox<=X;ox++)for(var oy=Y-1;oy<=Y;oy++)if(isS(ox,oy)&&isS(ox+1,oy)&&isS(ox,oy+1)&&isS(ox+1,oy+1))return true;
+  return false;
+}
 function groundSp(o,X,Y){
   var t=o?o.t:'',p=((X+Y)%2)?'b':'a',z=o&&o.zn,c=o?o.c:80,h=hashXY(X,Y);
-  if(t==='R'||t==='B'||t==='W'||t==='S')return null;
+  if(t==='S')return sBlock(X,Y)?'pavers_a':null;
+  if(t==='R'||t==='B'||t==='W')return null;
   if(t==='H'&&!(o.bt&&ATL[o.bt]))return null;
   if(t==='P')return (h&1)?'grass_path':'grass_gravel';
   if(t==='L')return 'waste_'+p;
@@ -1484,7 +1490,12 @@ function groundSp(o,X,Y){
 function spOver(o,X,Y,sx,sy,z,dim,now){
   if(!o)return;
   var t=o.t,h=hashXY(X,Y),d=o.dec,bad=d?cb(d.c)>=2:false,i;
-  if(t==='P'){
+  if(t==='S'){
+    if(isS(X-1,Y)&&isS(X,Y-1)&&isS(X-1,Y-1)){
+      var sn=(h&1)?'school_a':'school_b',sc=spScaled(sn,64*z/SPM[sn][0],dim);
+      if(sc)mx.drawImage(sc,Math.round(sx-sc.width/2),Math.round(sy+16*z+2*z-sc.height));
+    }
+  } else if(t==='P'){
     var au=o.c<60,T=[['tree_m','tree_m_au',.28,.3],['tree_s','tree_s_au',.74,.28],['birch_m','birch_m_au',.5,.74]];
     T.forEach(function(e){spObj(au?e[1]:e[0],sx,sy,z,dim,KP,e[2],e[3]);});
     if(h%3===0)spObj('bed_red',sx,sy,z,dim,KP,.5,.5,.5);
