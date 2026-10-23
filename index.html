@@ -925,10 +925,32 @@ function nextMonth(){
   }
   maybeAudit();
 }
+function arrestPrice(){return Math.max(300,Math.round(S.cash*.5));}
+function openArrest(){
+  S.warned=true;$('auWrap').hidden=false;
+  var fin=S.risk>=100,pr=arrestPrice(),h='<h3 id="auTitle">'+(fin?'За вами приїхали':'Є інформація, що завтра прийдуть')+'</h3><div class="in"><p>'+(fin?'Двоє в цивільному вже у під\'їзді. Валіза зібрана наполовину.':'Друг із «органів» шепнув: підозра '+Math.round(S.risk)+'%. Завтра о шостій ранку. Що робиш?')+'</p>';
+  h+='<div class="sec">Що робиш</div><div class="list">';
+  h+='<button class="opt" data-arr="flee"><b>Чкурнути за кордон</b><small>Усе лишається тут: гроші, фірми, житло. З собою ~10% готівки (до 300 тис.). Починаєш життя з нуля під новим іменем.</small></button>';
+  if(!fin)h+='<button class="opt" data-arr="pay"'+(S.cash<pr?' disabled':'')+'><b>Відкупитись · '+pr+' тис.</b><small>Підозра падає до 70%. Іншого шансу не буде.</small></button>';
+  h+='<button class="opt" data-arr="stay"><b>'+(fin?'Здатись':'Лишитись і ризикнути')+'</b><small>'+(fin?'Кінець гри.':'Нічого не змінюється. Дійде до 100% — кінець гри.')+'</small></button></div></div>';
+  $('audit').innerHTML=h;var b=$('audit').querySelector('button');if(b)b.focus();
+}
+function resolveArrest(k){
+  $('auWrap').hidden=true;
+  if(k==='pay'){var pr=arrestPrice();if(S.cash<pr)return;S.cash-=pr;S.risk=70;S.warned=false;addLog('Хтось «вирішив питання». Справу закрито за недостатністю доказів і достатністю суми.','good');ui();return;}
+  if(k==='stay'){if(S.risk>=100)finish('caught');else ui();return;}
+  var keep=Math.round(Math.min(300,S.cash*.1)),runs=(S.runs||0)+1,tab=S.tab;
+  newGame();S.runs=runs;S.cash+=keep;S.tab=tab;S.speed=0;
+  addLog('Ти за кордоном. Новий паспорт, нове ФОП, у кишені '+Math.round(S.cash)+' тис. Район пам\'ятає лише чутки. Втеч: '+runs+'.','good');
+  ui();
+}
 function check(){
   if(S.over)return;
-  if(S.risk>=100)return finish('caught');
+  if(S.risk<90)S.warned=false;
+  if(S.risk>=100){if(!$('auWrap').hidden)return;if(S.warned)return finish('caught');openArrest();return;}
+  else if(S.risk>=98&&!S.warned&&$('auWrap').hidden){openArrest();return;}
   if(S.month>8&&S.rt<6)return finish('riot');
+  if(!$('auWrap').hidden)return;
   if(S.home===HOMES.length-1&&homeOwned(S.home)===HOMES[S.home].it.length)return finish('win');
 }
 function finish(k){
@@ -1039,6 +1061,7 @@ function resolveAudit(opt){
 }
 $('audit').addEventListener('click',function(e){var evb=e.target.closest('[data-ev]');if(evb){resolveEvent(evb.dataset.ev,evb.dataset.v);return;}
   if(e.target.closest('[data-no]')){S.notes.shift();$('auWrap').hidden=true;ui();maybeAudit();return;}
+  var ar=e.target.closest('[data-arr]');if(ar){resolveArrest(ar.dataset.arr);return;}
   var b=e.target.closest('[data-au]');if(!b||!S.audits.length)return;resolveAudit(b.dataset.au);});
 
 /* ================= КАР'ЄРА ТА ДІЇ ================= */
@@ -1095,7 +1118,7 @@ function centerTile(){
 }
 var TABS=[['offers','Заявки'],['fops','Фірми'],['career','Кар\'єра'],['castle','Замок'],['log','Журнал']];
 function ui(){
-  $('rank').textContent=RANKS[S.rank];
+  $('rank').textContent=RANKS[S.rank]+(S.runs?' · втеч: '+S.runs:'');
   lastLabel=monthLabel();$('monthL').textContent=lastLabel;
   var sc=S.risk>70?'#ff5a4a':(S.risk>40?'#ffb14a':'#5dff8a');
   $('meters').innerHTML=
@@ -2115,7 +2138,7 @@ function frame(now){
   if(!$('pane-castle').hidden)drawCastle(gt);
   requestAnimationFrame(frame);
 }
-if(typeof window.__EXPOSE==='function')window.__EXPOSE({get S(){return S},get D(){return D},get E(){return E},newGame:newGame,nextMonth:nextMonth,tickTime:tickTime,openDeal:openDeal,tryDeal:tryDeal,signDeal:signDeal,renderDeal:renderDeal,rankUp:rankUp,openElection:openElection,runElection:runElection,resolveEvent:resolveEvent,citySites:citySites,genHappenings:genHappenings,openAnnual:openAnnual,annualTick:annualTick,resolveAudit:resolveAudit,maybeAudit:maybeAudit,genOffers:genOffers,ui:ui,drawMap:drawMap,drawMini:drawMini,drawCastle:drawCastle,chance:chance,setD:function(k,v){D[k]=v;},updateRating:updateRating,tap:tap,setZoom:setZoom,centerOn:centerOn});
+if(typeof window.__EXPOSE==='function')window.__EXPOSE({get S(){return S},check:check,get D(){return D},get E(){return E},newGame:newGame,nextMonth:nextMonth,tickTime:tickTime,openDeal:openDeal,tryDeal:tryDeal,signDeal:signDeal,renderDeal:renderDeal,rankUp:rankUp,openElection:openElection,runElection:runElection,resolveEvent:resolveEvent,citySites:citySites,genHappenings:genHappenings,openAnnual:openAnnual,annualTick:annualTick,resolveAudit:resolveAudit,maybeAudit:maybeAudit,genOffers:genOffers,ui:ui,drawMap:drawMap,drawMini:drawMini,drawCastle:drawCastle,chance:chance,setD:function(k,v){D[k]=v;},updateRating:updateRating,tap:tap,setZoom:setZoom,centerOn:centerOn});
 loadAtlases();loadSprites();
 newGame();
 if(hasSave()){$('tCont').hidden=false;$('tStart').textContent='Нова гра';}
