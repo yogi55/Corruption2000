@@ -274,7 +274,7 @@ function annualTick(){
       var x=r(),term=x<.35?'M':(x<.6?'Q':(x<.8?'H':'E'));
       S.annual.push({id:++S.annId,type:k,title:ANN[k].n,budget:r5(ANN[k].base*mult()*rnd(.9,1.15)),term:term,comp:rnd(.15,.3),deadline:S.month+3,applied:null});
     });
-    S.notes.push({title:'Оголошено річні тендери',lines:['Місто оголосило рамкові тендери на цілий рік. Заявки приймають ще 3 місяці.','Потрібні ТОВ, певна техніка й живі гроші на забезпечення. Умови оплати різні: хтось платить щомісяця, а хтось через рік.']});
+    S.notes.push({title:'Оголошено річні тендери',lines:['Місто оголосило рамкові тендери на цілий рік. Заявки приймають ще 3 місяці. Шукай їх угорі вкладки «Заявки» (блок згортається).','Потрібні ТОВ, певна техніка й живі гроші на забезпечення. Умови оплати різні: хтось платить щомісяця, а хтось через рік.']});
     addLog('Оголошено річні тендери. Подавай заявки до місяця '+(S.month+3)+'.','good');
   }
 }
@@ -317,7 +317,9 @@ function runContracts(){
 }
 function annualHtml(){
   if(!S.annual.length)return '';
-  var h='<div class="sec">Річні тендери</div><div class="list">';
+  var op=S.annOpen===true,h='<button class="btn" data-anx="1" aria-expanded="'+op+'" style="width:100%;text-align:left;margin:10px 0 5px">'+(op?'▾':'▸')+' Річні тендери · '+S.annual.length+(op?'':' (натисни, щоб розгорнути)')+'</button>';
+  if(!op)return h;
+  h+='<div class="list">';
   S.annual.forEach(function(a){
     h+='<button class="offer" data-an="open" data-id="'+a.id+'"'+(S.over?' disabled':'')+'><span class="l"><b>'+a.title+'</b><small><span class="tag t-tender">на рік</span>'+TERMS[a.term].n+' · дедлайн через '+Math.max(0,annLeft(a))+' міс.'+(a.applied?' · <b>заявку подано</b>':'')+'</small></span><span class="amt">'+annTotal(a)+' тис.</span></button>';
   });
@@ -1128,6 +1130,7 @@ function ui(){
 $('speed').addEventListener('click',function(e){var b=e.target.closest('[data-sp]');if(!b||S.over)return;S.speed=+b.dataset.sp;ui();});
 $('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;ui();});
 $('offers').addEventListener('click',function(e){
+  if(e.target.closest('[data-anx]')){S.annOpen=!S.annOpen;ui();return;}
   var an=e.target.closest('[data-an]');if(an){openAnnual(+an.dataset.id);return;}
   var b=e.target.closest('[data-open]');if(b){openDeal(S.offers[+b.dataset.open]);return;}
   var l=e.target.closest('[data-loc]');if(l){var o=S.offers[+l.dataset.loc];if(o)centerOn(o.x+.5,o.y+.5);}
