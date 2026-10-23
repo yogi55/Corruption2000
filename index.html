@@ -567,7 +567,18 @@ var DEVD={
 function realF(o){return o.dec?DEC[o.dec].real:(o.dev?DEVD[o.dev].real:(o.bt&&BTD[o.bt]?BTD[o.bt].real:1))}
 var DECR={R:[['led',13,2],['stop',7,1],['lamp',5,0],['curb',3,0]],Y:[['play',5,0],['bench',2,0]],P:[['mon',17,3],['fountain',6,2],['play',4,0],['bench',1,0]]};
 function decKind(o,X,Y){var L=DECR[o.t];if(!L)return null;var h=hashXY(X,Y);for(var i=0;i<L.length;i++)if(h%L[i][1]===0&&S.rank>=L[i][2])return L[i][0];return null}
-function nichesNote(){var seen={},u=[],l=[];Object.keys(DECR).forEach(function(t){DECR[t].forEach(function(e){if(seen[e[0]])return;seen[e[0]]=1;if(S.rank>=e[2])u.push(DEC[e[0]].n);else l.push(DEC[e[0]].n+' ('+RANKS[e[2]]+')');});});return '<div class="sec">Ніші благоустрою</div><p class="note">Відкрито: '+u.join(', ')+'.'+(l.length?' Далі: '+l.join(', ')+'.':'')+' Чим жирніша ніша, тим більше різниця між кошторисом і закупівлею.</p><div class="sec">Забудова</div><p class="note">'+(S.rank>=2?'Пустирі й двори під ЖК відкрито. ':'Заберуть з рангу Директор КП: пустирі й двори. ')+(S.rank>=3?'Сквери теж твої.':'Сквери під ЖК: з рангу Депутат.')+' Мешканці, суди й журналісти йдуть у комплекті.</p>';}
+function nichesNote(){
+  var seen={},byR={0:[],1:[],2:[],3:[]};
+  Object.keys(DECR).forEach(function(t){DECR[t].forEach(function(e){if(seen[e[0]])return;seen[e[0]]=1;byR[e[2]].push(DEC[e[0]].n);});});
+  var open=[],r;for(r=0;r<=S.rank;r++)open=open.concat(byR[r]);
+  var dev=S.rank>=3?'пустирі, двори й сквери під ЖК':(S.rank>=2?'пустирі й двори під ЖК':'поки закрита');
+  var h='<div class="sec">Що відкрито</div><p class="note"><b>Благоустрій:</b> '+open.join(', ')+'.<br><b>Забудова:</b> '+dev+'.</p>';
+  var nx=[];
+  for(r=S.rank+1;r<=3;r++){var l=byR[r].slice();if(r===2)l.push('пустирі й двори під ЖК');if(r===3)l.push('сквери під ЖК');if(l.length)nx.push('<b>'+RANKS[r]+':</b> '+l.join(', ')+'.');}
+  if(nx.length)h+='<div class="sec">Що відкриється далі</div><p class="note">'+nx.join('<br>')+'</p>';
+  h+='<p class="note">Чим дорожча ніша, тим більша різниця між кошторисом і закупівлею. Забудова йде в комплекті з гнівом мешканців, судами й журналістами.</p>';
+  return h;
+}
 var S, D=null, E=null, cars=[], floaters=[], hits=[], hover=null, dirtyMini=true, lastLabel='';
 var CAM_SPR={};
 
@@ -1079,8 +1090,8 @@ function rankUp(){
   updateRating();genOffers();dirtyMini=true;ui();
 }
 function nextReq(){
-  if(S.rank===0)return {t:'Зареєструвати ТОВ · 30 тис.',need:'Готівка ≥ 100, зв\'язки ≥ 12',ok:S.cash>=100&&S.contacts>=12};
-  if(S.rank===1)return {t:'Сісти директором КП · 120 тис.',need:'Готівка ≥ 300, зв\'язки ≥ 30, слава ≥ 10',ok:S.cash>=300&&S.contacts>=30&&S.fame>=10};
+  if(S.rank===0)return {t:'Зареєструвати ТОВ · 30 тис.',rows:[['Готівка',S.cash,100],['Зв\'язки',S.contacts,12]],ok:S.cash>=100&&S.contacts>=12};
+  if(S.rank===1)return {t:'Стати директором КП · 120 тис.',rows:[['Готівка',S.cash,300],['Зв\'язки',S.contacts,30],['Слава',S.fame,10]],ok:S.cash>=300&&S.contacts>=30&&S.fame>=10};
   return null;
 }
 function doBribe(){if(S.over||S.cash<40)return;S.cash-=40;S.risk=clamp(S.risk-12,0,100);addLog('Журналіст раптом зацікавився котиками.','good');ui();}
@@ -1152,9 +1163,12 @@ function ui(){
   fh+='<div class="sec">Автопарк</div><p class="note">Тендери потребують техніки: з нею +6% до шансу, без неї −10%. Парк знижує увагу податкової (зараз ×'+eqHeat().toFixed(2)+'). Купуєш тут або під час тендера, навіть з авансу.</p>';
   Object.keys(EQ).forEach(function(k){fh+='<button class="up'+(S.eq[k]?' own':'')+'" data-eq="'+k+'"'+((S.eq[k]||S.cash<EQ[k].c||S.over)?' disabled':'')+'><span><b>'+EQ[k].n+'</b><small>'+EQ[k].use+'</small></span><span>'+(S.eq[k]?'є':EQ[k].c+' тис.')+'</span></button>';});
   $('fops').innerHTML=fh;
-  var nr=nextReq(),ch='<p style="margin:0 0 8px"><b>'+RANKS[S.rank]+'</b> · слава '+S.fame+' · радіус району '+(S.rank>=3?'усе місто':ZR[S.rank]+' кварталів')+'</p>';
+  var nr=nextReq(),ch='<p style="margin:0 0 4px"><b>'+RANKS[S.rank]+'</b> · слава '+S.fame+'</p><p class="note" style="margin:0 0 4px">Радіус району: '+(S.rank>=3?'усе місто':ZR[S.rank]+' кварталів')+'.</p>';
   ch+=nichesNote();
-  if(nr)ch+='<button class="btn gold" data-career="up"'+(nr.ok&&!S.over?'':' disabled')+' style="width:100%">'+nr.t+'</button><p class="note" style="margin-top:4px">'+nr.need+'</p>';
+  if(nr){
+    ch+='<div class="sec">Як піднятись</div><div class="sum">'+nr.rows.map(function(q){var ok=q[1]>=q[2];return '<div><span>'+q[0]+'</span><span style="color:'+(ok?'#1c7a3a':'#a8322c')+'">'+Math.floor(q[1])+' / '+q[2]+(ok?' ✓':' ✗')+'</span></div>';}).join('')+'</div>';
+    ch+='<button class="btn gold" data-career="up"'+(nr.ok&&!S.over?'':' disabled')+' style="width:100%;margin-top:6px">'+nr.t+'</button>';
+  }
   else if(S.rank===2){
     var nxt=S.month<13?13:Math.ceil((S.month-1)/12)*12+1;
     ch+='<p class="note">Далі тільки вибори до міськради. Найближчі: місяць '+nxt+'. Слава й зв\'язки допомагають, гречка дорожча.</p>';
