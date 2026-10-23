@@ -217,7 +217,9 @@ var HOMES=[
   {n:'Замок',mv:4000,rk:3,it:[
     {k:'h5a',n:'Леви біля брами',c:1500},{k:'h5b',n:'Золотий унітаз',c:2000},{k:'h5c',n:'Тронна зала',c:3000},{k:'h5d',n:'Ров із крокодилами',c:2500},{k:'h5e',n:'Золотий трон',c:4000}]}
 ];
-var HART={0:{src:'assets/castle/plan_0.png',r:'assets/castle/plan_0r.png',w:691,h:515,it:{
+var HART={0:{src:'assets/castle/plan_0.png',r:'assets/castle/plan_0r.png',w:691,h:515,
+  walls:[{p:[[180,100],[535,288],[535,413],[180,225]],b:[180,225,535,413]},{p:[[205,300],[378,210],[378,335],[205,425]],b:[205,425,378,335]}],
+  it:{
   h0tv:{img:'tv',x:150,y:305,s:.19},h0ac:{img:'ac',x:100,y:200,s:.18,r:[340,150]},h0coat:{img:'coat',x:395,y:412,s:.18},h0fr:{img:'fridge',x:612,y:370,s:.15,r:[185,340]},
   h0isl:{img:'isl',x:112,y:388,s:.16},h0cin:{img:'cin',x:585,y:352,s:.16},h0wr:{img:'wr',x:648,y:322,s:.15},h0aq:{img:'aq',x:300,y:465,s:.16},h0gym:{img:'gym',x:445,y:448,s:.15}}}};
 function allItems(){var l=[];HOMES.forEach(function(h){h.it.forEach(function(i){l.push(i)})});return l}
@@ -1919,6 +1921,13 @@ function planCanvas(art,reno){
   g.drawImage(im,0,0);
   CPL[key]=c;return c;
 }
+function wallMask(art,wa,src,i){
+  var key='w'+src+i;if(CPL[key])return CPL[key];
+  var im=cimg(src);if(!im)return null;
+  var c=mkCanvas(art.w,art.h),g=c.getContext('2d');
+  g.beginPath();wa.p.forEach(function(q,k){k?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])});g.closePath();g.clip();
+  g.drawImage(im,0,0);CPL[key]=c;return c;
+}
 function drawCastle(now){
   var art=HART[S.home],g=cx2;
   if(art){if(cc.width!==art.w||cc.height!==art.h){cc.width=art.w;cc.height=art.h;}}
@@ -1934,7 +1943,21 @@ function drawCastle(now){
   var rn=S.home===0&&has('h0reno'),pc=planCanvas(art,rn);if(pc)g.drawImage(pc,0,0);
   var l=[],k,o;for(k in art.it)if(has(k)){o=art.it[k];l.push(rn&&o.r?{img:o.img,s:o.s,x:o.r[0],y:o.r[1]}:o);}
   l.sort(function(a,b){return a.y-b.y});
-  l.forEach(function(o){var im=cimg('assets/castle/i'+S.home+'_'+o.img+'.png');if(!im)return;var w=Math.round(im.naturalWidth*o.s),h=Math.round(im.naturalHeight*o.s);g.drawImage(im,Math.round(o.x-w/2),Math.round(o.y-h),w,h);});
+  var wl=art.walls||[],wsrc=rn&&art.r?art.r:art.src;
+  l.forEach(function(o){
+    var im=cimg('assets/castle/i'+S.home+'_'+o.img+'.png');if(!im)return;
+    var w=Math.round(im.naturalWidth*o.s),h=Math.round(im.naturalHeight*o.s),dx=Math.round(o.x-w/2),dy=Math.round(o.y-h);
+    g.drawImage(im,dx,dy,w,h);
+    wl.forEach(function(wa,i){
+      var b=wa.b,x1=Math.min(b[0],b[2]),x2=Math.max(b[0],b[2]);
+      if(o.x<x1||o.x>x2)return;
+      var ly=b[1]+(b[3]-b[1])*(o.x-b[0])/(b[2]-b[0]);
+      if(o.y>=ly)return;
+      var mk=wallMask(art,wa,wsrc,i);if(!mk)return;
+      g.save();g.beginPath();g.rect(dx,dy,w,h);g.clip();g.drawImage(mk,0,0);g.restore();
+    });
+  });
+  if(window.__dbgWalls){g.strokeStyle='#f0f';wl.forEach(function(wa){g.beginPath();wa.p.forEach(function(q,i){i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])});g.closePath();g.stroke();});}
 }
 
 /* ================= ЧАС ТА ЦИКЛ ================= */
