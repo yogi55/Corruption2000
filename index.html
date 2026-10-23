@@ -286,6 +286,7 @@ function resolveAnnual(a,lines){
     var bribe=Math.round(a.budget*ap.bribe),tot=annTotal(a);
     S.cash=Math.max(0,S.cash-bribe);
     if(ap.bribe>0)S.contacts+=3;
+    if(ap.bribe>0||ap.tailor)S.dirty=true;
     S.risk=clamp(S.risk+1+ap.bribe*10+(ap.tailor?2:0),0,100);
     S.fame+=2+(a.budget>=500?1:0);
     S.contracts.push({type:a.type,title:a.title,budget:a.budget,term:a.term,tier:ap.tier,m:0,def:0,total:tot,mcost:annMCost(a,ap.tier)});
@@ -625,7 +626,7 @@ function wyOf(X,Y){return (X+Y)*8}
 function newGame(){
   S={speed:0,tick:0,month:1,cash:70,risk:6,contacts:8,fame:0,rank:0,angry:0,inflate:0,rt:50,
      objs:[],offers:[],pending:[],castle:[],log:[],over:false,tab:'offers',zoom:1,cam:{x:0,y:0},
-     audits:[],devs:0,eq:{},acc:0,taxDebt:0,lastTax:null,sites:[],stakes:[],events:[],siteId:0,lastWash:-9,annual:[],contracts:[],notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
+     audits:[],devs:0,eq:{},acc:0,taxDebt:0,lastTax:null,sites:[],stakes:[],events:[],siteId:0,lastWash:-9,annual:[],contracts:[],dirty:false,cleanN:0,charM:0,lowM:0,openCd:0,notes:[],annId:0,fops:[{name:'ФОП Ви',used:0,heat:0,equip:false,isCo:false,lastUsed:0}]};
   S.objs=genWorld();
   cars=genCars();
   S.cam={x:wxOf(HOME.x,HOME.y),y:wyOf(HOME.x,HOME.y)+8};
@@ -794,6 +795,7 @@ function signDeal(){
   if(o.kind==='auction'){
     var up=o.price+bribeAmt+tailorAmt;if(S.cash<up)return;
     S.cash-=up;obj.owned=true;obj.sk=null;S.fame+=1;
+    if(D.bribe>0||D.tailor)S.dirty=true;
     S.risk=clamp(S.risk+1+(D.bribe*10)+(D.tailor?2:0),0,100);
     if(D.bribe>0)S.contacts+=3;
     floaters.push({X:o.x,Y:o.y,txt:'Кіоск твій',col:'#d6c8ff',t0:performance.now()});
@@ -806,6 +808,7 @@ function signDeal(){
     S.pending.push({due:S.month+(o.kind==='direct'?1:2),amt:pay-avans});
     if(o.dec){obj.dec={k:o.dec,c:70+30*t.q,q:t.q};obj.sk=null;}else{obj.c=70+30*t.q;obj.q=t.q;obj.by='me';obj.sk=null;}
     S.fame+=t.fame+(o.budget>=200?1:0);
+    if(D.bribe>0||D.tailor||D.infl)S.dirty=true;
     S.risk=clamp(S.risk+1+(D.bribe*10)+(D.tailor?2:0)+(D.infl?3:0)+(t.q<.4?1:0)+(rfs<1?(1-rfs)*3:0),0,100);
     if(D.bribe>0)S.contacts+=3;
     if(D.infl)S.inflate+=1;
@@ -860,6 +863,7 @@ function nextMonth(){
   }
   if(S.castle.length>=2&&Math.random()<Math.min(.3,.05*S.castle.length+(S.rank>=2?.05:0)))S.audits.push({kind:'life',f:null,fine:S.castle.length*60});
   S.audits=S.audits.slice(0,1);
+  if(S.rank>=3&&S.audits.length){if(Math.random()<.4)S.audits=[];else S.audits.forEach(function(a){a.fine=Math.round(a.fine*.5)});}
   if(bad&&Math.random()<Math.min(.55,bad*.14)){S.risk=clamp(S.risk+9,0,100);addLog(Math.random()<.5?'Журналіст зняв відео про твій «ремонт»: яма вже там, де був асфальт.':'Журналіст порахував: лавка в кошторисі коштує як мотоцикл, а стоїть як табуретка.','bad');}
   if(weak.length&&Math.random()<.25){
     var w=weak[(Math.random()*weak.length)|0];w.c=8;w.sk=null;S.risk=clamp(S.risk+7,0,100);S.angry+=2;
@@ -870,13 +874,24 @@ function nextMonth(){
     else S.inflate*=.85;
   }
   if(S.devs&&Math.random()<Math.min(.4,.1*S.devs)){S.risk=clamp(S.risk+5,0,100);S.contacts=Math.max(0,S.contacts-1);addLog('Мешканці забудованих кварталів подали до суду: дозволів на ЖК не знайшли ані вони, ані ти.','bad');}
+  if(S.charM>0)S.angry=Math.max(0,S.angry-3);
   updateRating();
   var rt=S.rt;
   if(rt<35&&Math.random()<.3){S.risk=clamp(S.risk+5,0,100);S.contacts=Math.max(0,S.contacts-2);addLog('Мешканці вийшли під райадміністрацію. На плакатах твоє прізвище майже не видно.','bad');}
   S.angry*=.93;
-  S.risk=clamp(S.risk-2.5-(rt>60?1:0)+S.castle.length*1.2,0,100);
+  var cl=0;for(i=0;i<S.objs.length;i++){o=S.objs[i];if(o&&o.by==='me'&&'RYHSPB'.indexOf(o.t)>=0&&o.q>=.7&&o.c>=60)cl++;}
+  S.cleanN=cl;
+  var dec=2.5+(rt>60?1:0)+Math.min(3,cl*.2);
+  if(!S.dirty){dec+=2.5;if(S.risk>12)addLog('Тихий місяць: жодних «умов під себе». Підозра спадає вдвічі швидше.','good');}
+  if(S.charM>0){dec+=2;S.charM--;if(!S.charM)addLog('Фонд «Котикам і дітям» завершив програму. Котики ситі, діти теж, звітність ідеальна.','');}
+  if(S.lowM>0){dec+=10;S.lowM--;if(!S.lowM)addLog('Ти виринув із «відпустки». Усі вважають, що ти був на реабілітації.','');}
+  if(S.openCd>0)S.openCd--;
+  S.dirty=false;
+  S.risk=clamp(S.risk-dec+S.castle.length*1.2,0,100);
+  if(S.rank>=3&&S.risk>85&&Math.random()<.15){S.rank=2;S.risk=clamp(S.risk-15,0,100);addLog('Депутатський мандат складено «за власним бажанням». Недоторканність закінчилась.','bad');}
   citySites();genHappenings();
-  genOffers();dirtyMini=true;
+  if(S.lowM>0)S.offers=[];else genOffers();
+  dirtyMini=true;
   var elect=((S.month-1)%12===0&&S.month>1);
   check();ui();
   if(elect&&!S.over){
@@ -1015,6 +1030,31 @@ function nextReq(){
 }
 function doBribe(){if(S.over||S.cash<40)return;S.cash-=40;S.risk=clamp(S.risk-12,0,100);addLog('Журналіст раптом зацікавився котиками.','good');ui();}
 function doLawyer(){if(S.over||S.cash<90||S.rank<1)return;S.cash-=90;S.risk=clamp(S.risk-25,0,100);addLog('Юрист «усе врегулював». Папки зникли, зате з\'явилась нова.','good');ui();}
+function actList(){
+  var r=S.rank,c=S.cash,L=[];
+  L.push({k:'bribe',t:'Журналіст · 40 тис. (підозра −12)',ok:c>=40});
+  L.push({k:'lawyer',t:'Юрист · 90 тис. (підозра −25, з рангу 1)',ok:c>=90&&r>=1});
+  L.push({k:'call',t:'Один дзвінок · зв\'язки −10 (підозра −15, треба 10+ зв\'язків)',ok:S.contacts>=10});
+  L.push({k:'tip',t:'Анонімка на конкурента · 20 тис. (підозра −10, зв\'язки −2, з рангу 1)',ok:c>=20&&r>=1});
+  L.push({k:'charity',t:'Фонд «Котикам і дітям» · 120 тис. (півроку: підозра −2 і гнів −3 щомісяця, з рангу 1)',ok:c>=120&&r>=1&&!S.charM});
+  L.push({k:'open',t:'Урочисте відкриття зі стрічкою · безкоштовно (підозра −8, гнів −8, треба 1+ якісна робота'+(S.openCd?', ще '+S.openCd+' міс. чекати':'')+')',ok:S.cleanN>=1&&!S.openCd});
+  L.push({k:'prosec',t:'Прокурор у відпустці · 150 тис. (підозра −40, зв\'язки −2, з рангу 2)',ok:c>=150&&r>=2});
+  L.push({k:'scape',t:'Підставити стрілочника · віддати ФОП слідству (підозра −35, зв\'язки −3)',ok:S.fops.length>1});
+  L.push({k:'low',t:'Залягти на дно · 2 міс. без замовлень (підозра −10 щомісяця)'+(S.lowM?' · діє, ще '+S.lowM:''),ok:!S.lowM});
+  return L;
+}
+function doAct(k){
+  if(S.over)return;var a=actList().filter(function(x){return x.k===k})[0];if(!a||!a.ok)return;
+  if(k==='bribe')return doBribe();if(k==='lawyer')return doLawyer();
+  if(k==='call'){S.contacts-=10;S.risk=clamp(S.risk-15,0,100);addLog('Один дзвінок — і питання «вирішилось саме». Ніхто не пам\'ятає, яке.','good');}
+  else if(k==='tip'){S.cash-=20;S.contacts=Math.max(0,S.contacts-2);S.risk=clamp(S.risk-10,0,100);addLog('Анонімка пішла на конкурента. Уваги до тебе стало менше.','good');}
+  else if(k==='charity'){S.cash-=120;S.charM=6;S.risk=clamp(S.risk-2,0,100);addLog('Створено благодійний фонд «Котикам і дітям». Голова — твоя тітка. Піар-ефект тривалий.','good');}
+  else if(k==='open'){S.risk=clamp(S.risk-8,0,100);S.angry=Math.max(0,S.angry-8);S.fame+=1;S.openCd=3;addLog('Урочисте відкриття! Стрічку перерізали, квітку полили, на фото всі з прізвищем.','good');}
+  else if(k==='prosec'){S.cash-=150;S.contacts=Math.max(0,S.contacts-2);S.risk=clamp(S.risk-40,0,100);addLog('Прокурор пішов у довгу відпустку. Справа теж.','good');}
+  else if(k==='scape'){var j=-1,i;for(i=S.fops.length-1;i>0;i--)if(!S.fops[i].isCo){j=i;break;}if(j<0)return;var nm=S.fops[j].name;S.fops.splice(j,1);S.contacts=Math.max(0,S.contacts-3);S.risk=clamp(S.risk-35,0,100);addLog('«'+nm+'» віддали слідству. Він нічого не підписував, але це не завадило.','good');}
+  else if(k==='low'){S.lowM=2;S.offers=[];addLog('Ти зник із радарів на два місяці. Нові заявки не приймаєш.','');dirtyMini=true;}
+  ui();
+}
 function doFlee(){if(!S.over&&S.cash>=FLEE_COST)finish('flee');}
 
 /* ================= ІНТЕРФЕЙС ================= */
@@ -1064,7 +1104,7 @@ function ui(){
     var nxt=S.month<13?13:Math.ceil((S.month-1)/12)*12+1;
     ch+='<p class="note">Далі тільки вибори до міськради. Найближчі: місяць '+nxt+'. Слава й зв\'язки допомагають, гречка дорожча.</p>';
   } else ch+='<p class="note">Мандат є. Тепер доступні МАФ-аукціони й забудова пустирів по всьому місту. Переобрання кожні 12 місяців.</p>';
-  ch+='<div class="sec">Дії</div><div class="list"><button class="btn" data-act="bribe"'+(S.over||S.cash<40?' disabled':'')+'>Журналіст · 40 тис. (підозра −12)</button><button class="btn" data-act="lawyer"'+(S.over||S.cash<90||S.rank<1?' disabled':'')+'>Юрист · 90 тис. (підозра −25, з рангу 1)</button><button class="btn" data-act="flee"'+(S.over||S.cash<FLEE_COST?' disabled':'')+'>Втекти за кордон · '+FLEE_COST+' тис.</button></div>';
+  ch+='<div class="sec">Дії</div><div class="list">'+actList().map(function(a){return '<button class="btn" data-act="'+a.k+'"'+(S.over||!a.ok?' disabled':'')+'>'+a.t+'</button>';}).join('')+'<button class="btn" data-act="flee"'+(S.over||S.cash<FLEE_COST?' disabled':'')+'>Втекти за кордон · '+FLEE_COST+' тис.</button></div>';
   $('career').innerHTML=ch;
   var uh='';
   UPG.forEach(function(u){
@@ -1101,7 +1141,7 @@ $('fops').addEventListener('click',function(e){
 $('career').addEventListener('click',function(e){
   if(e.target.closest('[data-career]'))return rankUp();
   var a=e.target.closest('[data-act]');if(!a)return;
-  if(a.dataset.act==='bribe')doBribe();else if(a.dataset.act==='lawyer')doLawyer();else if(a.dataset.act==='flee')doFlee();
+  if(a.dataset.act==='flee')doFlee();else doAct(a.dataset.act);
 });
 $('upgrades').addEventListener('click',function(e){
   var b=e.target.closest('[data-up]');if(!b||S.over)return;
