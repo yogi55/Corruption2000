@@ -200,6 +200,7 @@ var TIERS=[
 ];
 var BRIBES=[0,.1,.2];
 var FOP_LIMIT=150;
+function fopLim(f){return f&&f.watch>0?FOP_LIMIT/2:FOP_LIMIT;}
 var FOP_NAMES=['ФОП Тітка Валя','ФОП Кум Степан','ФОП Сусід Борис','ФОП Теща','ФОП Шурін Едік'];
 var UPG=[
   {k:'fence',n:'Триметровий паркан',c:300},
@@ -484,7 +485,7 @@ function genHappenings(){
     S.lastWash=S.month;S.events.push({kind:'wash',x:Math.round(X/5)*5,pct:Math.round(rnd(.12,.2)*100)/100,who:CLIENTS[(Math.random()*CLIENTS.length)|0]});
   }
 }
-function evOk(f,X){return f.isCo||f.used+X<=FOP_LIMIT}
+function evOk(f,X){return f.isCo||f.used+X<=fopLim(f)}
 function openEvent(){
   var e=S.events[0];if(!e)return;
   $('auWrap').hidden=false;var h='';
@@ -500,7 +501,7 @@ function openEvent(){
     h='<h3 id="auTitle">Пропозиція «прокрутити»</h3><div class="in"><p>'+e.who.charAt(0).toUpperCase()+e.who.slice(1)+' просить пропустити через твої ФОПи <b>'+e.x+' тис.</b> «за послуги». Тобі залишаться <b>'+Math.round(e.pct*100)+'%</b>, тобто '+fee+' тис.</p><p class="note">Обіг через ФОП росте, а разом із ним увага податкової. Зв\'язки +'+(e.x>=300?2:1)+'. Клієнт може виявитись «під ковпаком».</p><div class="list">';
     S.fops.forEach(function(f,i){
       var ok=evOk(f,e.x);
-      h+='<button class="opt" data-ev="wash" data-v="'+i+'"'+(ok?'':' disabled')+'><b>Через «'+f.name+'» · +'+fee+' тис.</b><small>'+(f.isCo?'ТОВ без ліміту':'вільний ліміт '+Math.max(0,Math.round(FOP_LIMIT-f.used))+' тис.')+(ok?'':' · не вміщається')+'</small></button>';
+      h+='<button class="opt" data-ev="wash" data-v="'+i+'"'+(ok?'':' disabled')+'><b>Через «'+f.name+'» · +'+fee+' тис.</b><small>'+(f.isCo?'ТОВ без ліміту':'вільний ліміт '+Math.max(0,Math.round(fopLim(f)-f.used))+' тис.')+(ok?'':' · не вміщається')+'</small></button>';
     });
     h+='<button class="opt" data-ev="no"><b>Відмовитись</b><small>Без наслідків.</small></button></div></div>';
   }
@@ -698,7 +699,7 @@ function payAmt(){return Math.round(D.off.budget*(D.infl?1.25:1))}
 function fopOk(f){
   var o=D.off;
   if(o.kind==='tender'&&!f.isCo)return false;
-  return f.isCo||f.used+payAmt()<=FOP_LIMIT;
+  return f.isCo||f.used+payAmt()<=fopLim(f);
 }
 function openDeal(off){
   if(S.over||!off)return;
@@ -739,7 +740,7 @@ function renderDeal(){
       h+='<div class="sec">На кого оформити</div><div class="list">';
       S.fops.forEach(function(f,i){
         var ok=fopOk(f);
-        h+='<button class="opt" data-a="fop" data-v="'+i+'" aria-pressed="'+(D.fop===i)+'"'+(ok?'':' disabled')+'><b>'+f.name+'</b><small>'+(f.isCo?'без ліміту, потрібна для тендерів':'вільний ліміт '+Math.max(0,FOP_LIMIT-f.used)+' тис. цього місяця'+(o.kind==='tender'?' · на тендер не годиться':''))+'</small></button>';
+        h+='<button class="opt" data-a="fop" data-v="'+i+'" aria-pressed="'+(D.fop===i)+'"'+(ok?'':' disabled')+'><b>'+f.name+'</b><small>'+(f.isCo?'без ліміту, потрібна для тендерів':'вільний ліміт '+Math.max(0,fopLim(f)-f.used)+' тис. цього місяця'+(o.kind==='tender'?' · на тендер не годиться':''))+'</small></button>';
       });
       h+='</div>';
       if(!okFops.length)h+='<p class="note" style="margin-top:6px">Нема на кого оформити: ліміт ФОПів вичерпано. Купи ще один ФОП або візьми менший договір.</p>';
@@ -851,11 +852,12 @@ function nextMonth(){
   if(idx===8&&weak.length+bad>0)addLog('Почалась зима. Те, що ти клав у жовтні, дякує за підробіток.','bad');
   S.fops.forEach(function(f){
     f.lastUsed=f.used;
-    if(!f.isCo)f.heat=f.heat*.7+(f.used/FOP_LIMIT)*eqHeat()*(S.acc===2?.7:1);
+    if(!f.isCo)f.heat=f.heat*.7+(f.used/fopLim(f))*eqHeat()*(S.acc===2?.7:1);
     else f.heat=f.heat*.7+(f.used/450+S.inflate*.1)*(S.acc===2?.7:1);
     f.used=0;
   });
   S.audits=[];
+  S.fops.forEach(function(f){if(f.watch>0){f.watch--;if(!f.watch)addLog('Нагляд за рахунками «'+f.name+'» знято. Ліміт знову повний.','good');}});
   for(i=0;i<S.fops.length;i++){
     f=S.fops[i];
     if(f.isCo){if(Math.random()<Math.min(.3,f.heat*.07))S.audits.push({kind:'co',f:f,fine:Math.max(40,Math.round(f.lastUsed*.1+S.inflate*20))});}
@@ -977,9 +979,9 @@ function renderAudit(a){
   var I=auInfo(a),h='<h3 id="auTitle">'+I.title+'</h3><div class="in"><p>'+I.text+'</p>';
   h+='<div class="sum"><div><span>Штраф</span><span class="neg">'+a.fine+' тис.</span></div><div><span>Готівка</span><span>'+Math.round(S.cash)+' тис.</span></div></div>';
   h+='<div class="sec">Що робиш</div><div class="list">';
-  h+='<button class="opt" data-au="pay"><b>Заплатити штраф · '+a.fine+' тис.</b><small>Без фокусів. Підозра +6'+(a.kind==='fop'?', ФОП закривають':'')+'.</small></button>';
-  h+='<button class="opt" data-au="law"'+(S.cash<I.lawCost?' disabled':'')+'><b>Юрист · '+I.lawCost+' тис.</b><small>Шанс '+Math.round(I.pLaw*100)+'%: штрафу нема. Інакше платиш штраф і підозра +8.</small></button>';
-  h+='<button class="opt" data-au="bribe"'+(S.cash<I.brCost?' disabled':'')+'><b>Домовитись з інспектором · '+I.brCost+' тис.</b><small>Шанс '+Math.round(I.pBr*100)+'%: «акт не склали». Невдача: штраф ×1,5 і підозра +14.</small></button>';
+  h+='<button class="opt" data-au="pay"><b>Заплатити штраф · '+a.fine+' тис.</b><small>Без фокусів. Підозра +6'+(a.kind==='fop'?(a.f&&a.f===S.fops[0]?'. Рахунки ФОПа «під наглядом»: ліміт ×0,5 на 3 міс.':', цей ФОП закривають'):'')+'.</small></button>';
+  h+='<button class="opt" data-au="law"'+(S.cash<I.lawCost?' disabled':'')+'><b>Юрист · '+I.lawCost+' тис.</b><small>Шанс '+Math.round(I.pLaw*100)+'%: штрафу нема, ФОП лишається. Інакше платиш штраф, підозра +8'+(a.kind==='fop'?' і наслідки як при сплаті':'')+'.</small></button>';
+  h+='<button class="opt" data-au="bribe"'+(S.cash<I.brCost?' disabled':'')+'><b>Домовитись з інспектором · '+I.brCost+' тис.</b><small>Шанс '+Math.round(I.pBr*100)+'%: «акт не склали». Невдача: штраф ×1,5, підозра +14'+(a.kind==='fop'?' і наслідки як при сплаті':'')+'.</small></button>';
   h+='</div></div>';
   $('audit').innerHTML=h;
 }
@@ -1000,9 +1002,15 @@ function resolveAudit(opt){
   S.cash=Math.max(0,S.cash-paid-cost);
   S.risk=clamp(S.risk,0,100);
   if(closed&&a.kind==='fop'&&a.f){
-    var ix=S.fops.indexOf(a.f);
-    if(ix>=0&&S.fops.length>1){S.fops.splice(ix,1);msg+=' «'+a.f.name+'» закрито.';}
-    else a.f.heat=0;
+    var ix=S.fops.indexOf(a.f),f0=a.f;
+    f0.au=(f0.au||[]).filter(function(m){return m>S.month-12;});f0.au.push(S.month);
+    if(f0.au.length>=3){
+      S.risk=clamp(S.risk+25,0,100);
+      if(ix>0){S.fops.splice(ix,1);}else{f0.watch=3;f0.heat=0;f0.au=[];}
+      msg+=' Третя перевірка за рік: порушено кримінальну справу, підозра +25.'+(ix>0?' «'+f0.name+'» закрито.':' Рахунки «'+f0.name+'» під наглядом 3 міс.');
+    }else if(ix>0){S.fops.splice(ix,1);msg+=' «'+f0.name+'» закрито, новий можна відкрити за 12 тис.';}
+    else if(ix===0){f0.watch=3;f0.heat=0;msg+=' Рахунки «'+f0.name+'» під наглядом 3 місяці: ліміт обігу ×0,5.';}
+    else f0.heat=0;
   }
   addLog('Податкова: '+msg,closed?'bad':'good');
   $('auWrap').hidden=true;dirtyMini=true;check();ui();maybeAudit();
@@ -1088,7 +1096,7 @@ function ui(){
   S.fops.forEach(function(f,i){
     var hot=f.heat>1.2;
     fh+='<div class="fop"><div class="row"><b>'+f.name+'</b><span class="heat'+(hot?' hot':'')+'">'+(f.isCo?'є техніка і штат':(eqN()?'парк є':'без техніки')+' · увага '+(hot?'висока':(f.heat>.5?'є':'низька')))+'</span></div>'+
-      (f.isCo?'':'<div class="pb"><i style="width:'+clamp(f.used/FOP_LIMIT*100,0,100)+'%"></i></div><div class="row"><span class="note">Обіг місяця: '+Math.round(f.used)+' з '+FOP_LIMIT+' тис.</span>'+''+'</div>')+'</div>';
+      (f.isCo?'':'<div class="pb"><i style="width:'+clamp(f.used/fopLim(f)*100,0,100)+'%"></i></div><div class="row"><span class="note">Обіг місяця: '+Math.round(f.used)+' з '+fopLim(f)+' тис.</span>'+''+'</div>')+'</div>';
   });
   if(S.fops.filter(function(f){return !f.isCo;}).length<6)fh+='<button class="fopb opt" data-fop="new"'+(S.cash<12||S.over?' disabled':'')+'><b>+ Новий ФОП на родича</b><small>12 тис. · свій ліміт '+FOP_LIMIT+' тис. на місяць</small></button>';
   var bh='<div class="sec">Бухгалтерія і податки</div><p class="note">ФОП: 5% з обігу і ЄСВ '+fm(ESV_FOP)+' тис./міс. ТОВ: 6% і штат '+ESV_CO+' тис./міс. Бухгалтер коштує 1,5 тис. за кожен ФОП і 6 за ТОВ. Без нього звітність іноді здають із помилками (штраф). Головбух ×1,8: податки −15%, увага податкової −30%.'+(S.lastTax?' Минулого місяця: податок '+S.lastTax.tax+', ЄСВ '+fm(S.lastTax.esv)+(S.lastTax.acc?', бухгалтер '+fm(S.lastTax.acc):'')+(S.lastTax.fine?', штрафи '+S.lastTax.fine:'')+'.':'')+(S.taxDebt?' <b class="neg">Борг по податках: '+S.taxDebt+' тис.</b>':'')+'</p><div class="list">';
