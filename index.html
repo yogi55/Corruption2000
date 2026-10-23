@@ -1683,7 +1683,7 @@ function drawCarPx(x,y,c,z,W,H){
   mx.fillStyle='#cfe9f5';mx.fillRect(sx-(w>>2),sy-h,Math.max(1,w>>1),1);
 }
 function drawSite(sx,sy,z,now,st){
-  if(SPREADY){var cn=(st.id%2)?'crane_a':'crane_b',ck=32*z*1.7/SPM[cn][0],cc=spScaled(cn,ck,false);if(cc){mx.drawImage(cc,Math.round(sx-cc.width/2),Math.round(sy+16*z+3*z-cc.height));return;}}
+  if(SPREADY){var cn=(st.id%2)?'crane_a':'crane_b',ck=32*z*1.45/SPM[cn][0],cc=spScaled(cn,ck,false);if(cc){mx.drawImage(cc,Math.round(sx-cc.width/2),Math.round(sy+16*z+3*z-cc.height));return;}}
   G=mx;var cx=sx,cy=sy+8*z,i;
   var w=16*z,h=8*z,col=(Math.floor(now/500)%2)?'#f2c230':'#222222';
   bl(cx,cy-h,cx+w,cy,'#f2c230');bl(cx+w,cy,cx,cy+h,'#222222');bl(cx,cy+h,cx-w,cy,'#f2c230');bl(cx-w,cy,cx,cy-h,'#222222');
@@ -1732,7 +1732,7 @@ function drawMap(now){
           var bob=reduce?0:Math.sin(now/260+X)*1.5;mx.fillStyle='#ffe27a';mx.fillRect(Math.round(sx),Math.round(sy-(14+bob)*z+8*z),Math.max(2,Math.round(3*z)),Math.max(2,Math.round(3*z)));
         }
       }
-      if(o&&o.site)sitesDraw.push([sx,sy,o.site]);
+      if(o&&o.site)drawSite(sx,sy,z,now,o.site);
       var cl=carMap[Y*N+X];
       if(cl)for(i=0;i<cl.length;i++)drawCarPx(cl[i][0],cl[i][1],cl[i][2],z,W,H);
     }
