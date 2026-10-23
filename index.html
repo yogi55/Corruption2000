@@ -300,7 +300,7 @@ function annualTick(){
 function resolveAnnual(a,lines){
   var ap=a.applied;if(!ap)return;
   S.cash+=ap.lock;
-  var miss=ANN[a.type].eq.filter(function(k){return !S.eq[k]});
+  var pp=ap.paper||[],miss=ANN[a.type].eq.filter(function(k){return !S.eq[k]&&pp.indexOf(k)<0});
   if(miss.length){lines.push('«'+a.title+'»: заявку відсіяли, бо нема техніки ('+miss.map(function(k){return EQ[k].n.toLowerCase()}).join(', ')+'). Забезпечення повернули.');return;}
   if(Math.random()<annChance(a,ap)){
     var bribe=Math.round(a.budget*ap.bribe),tot=annTotal(a);
@@ -309,9 +309,11 @@ function resolveAnnual(a,lines){
     if(ap.bribe>0||ap.tailor)S.dirty=true;
     S.risk=clamp(S.risk+1+ap.bribe*10+(ap.tailor?2:0),0,100);
     S.fame+=2+(a.budget>=500?1:0);
-    S.contracts.push({type:a.type,title:a.title,budget:a.budget,term:a.term,tier:ap.tier,m:0,def:0,total:tot,mcost:annMCost(a,ap.tier)});
+    var pend=pp.filter(function(k){return !S.eq[k]});
+    S.contracts.push({type:a.type,title:a.title,budget:a.budget,term:a.term,tier:ap.tier,m:0,def:0,total:tot,mcost:annMCost(a,ap.tier),paper:pend,pDue:S.month+3,pWarn:0});
+    if(pend.length){S.risk=clamp(S.risk+8,0,100);S.dirty=true;}
     if(a.term==='E')S.cash+=Math.round(tot*.15);
-    lines.push('«'+a.title+'»: ВИГРАНО. '+tot+' тис. за рік, '+TERMS[a.term].n+'. Щомісяця витрати ≈ '+annMCost(a,ap.tier)+' тис.'+(a.term==='E'?' Аванс '+Math.round(tot*.15)+' тис. уже на рахунку.':''));
+    lines.push('«'+a.title+'»: ВИГРАНО. '+tot+' тис. за рік, '+TERMS[a.term].n+'. Щомісяця витрати ≈ '+annMCost(a,ap.tier)+' тис.'+(a.term==='E'?' Аванс '+Math.round(tot*.15)+' тис. уже на рахунку.':'')+(pend.length?' УВАГА: техніка була лише на папері ('+pend.map(function(k){return EQ[k].n.toLowerCase()}).join(', ')+'). Купи її до місяця '+(S.month+3)+', інакше перевірки й штрафи.':''));
   } else lines.push('«'+a.title+'»: програно. '+LOSE[(Math.random()*LOSE.length)|0]);
 }
 function runContracts(){
@@ -320,6 +322,15 @@ function runContracts(){
     c.m++;
     if(S.cash>=c.mcost)S.cash-=c.mcost;
     else{c.def++;S.risk=clamp(S.risk+6,0,100);S.angry+=2;addLog('Не вистачило грошей на роботи за «'+c.title+'»: працівники пішли на страйк, мешканці в люті.','bad');}
+    if(c.paper&&c.paper.length){
+      c.paper=c.paper.filter(function(k){return !S.eq[k]});
+      if(!c.paper.length)addLog('Техніка за «'+c.title+'» тепер справжня: привиди з актів стали реальними.','good');
+      else if(S.month>=c.pDue){
+        var pf=Math.round(c.budget*.2);S.cash=Math.max(0,S.cash-pf);S.risk=clamp(S.risk+12,0,100);S.contacts=Math.max(0,S.contacts-2);c.pWarn=(c.pWarn||0)+1;S.dirty=true;
+        if(c.pWarn>=2){c.def=3;addLog('Перевірка за «'+c.title+'»: техніки як не було, так нема. Штраф '+pf+' тис., контракт під розірвання.','bad');}
+        else{c.pDue=S.month+2;addLog('Перевірка за «'+c.title+'»: техніка лише в паперах. Штраф '+pf+' тис. Є ще 2 місяці, щоб її купити.','bad');}
+      } else if(Math.random()<.2){S.risk=clamp(S.risk+3,0,100);addLog('Інспектор цікавився, де саме стоїть техніка за «'+c.title+'». Довелось казати «на об\'єкті».','bad');}
+    }
     var pay=0;
     if(c.term==='M')pay=c.total/12;
     else if(c.term==='Q'){if(c.m%3===0)pay=c.total/4;}
@@ -348,14 +359,16 @@ function contractsHtml(){
   if(!S.contracts.length)return '';
   var h='<div class="sec">Діючі контракти</div>';
   S.contracts.forEach(function(c){
-    h+='<div class="fop"><div class="row"><b>'+c.title+'</b><span class="heat">місяць '+c.m+' з 12</span></div><div class="pb"><i style="width:'+(c.m/12*100)+'%"></i></div><div class="row"><span class="note">'+TERMS[c.term].n+' · '+c.total+' тис. · витрати '+c.mcost+' тис./міс.'+(c.def?' · <b class="neg">борги: '+c.def+'</b>':'')+'</span></div></div>';
+    h+='<div class="fop"><div class="row"><b>'+c.title+'</b><span class="heat">місяць '+c.m+' з 12</span></div><div class="pb"><i style="width:'+(c.m/12*100)+'%"></i></div><div class="row"><span class="note">'+TERMS[c.term].n+' · '+c.total+' тис. · витрати '+c.mcost+' тис./міс.'+(c.def?' · <b class="neg">борги: '+c.def+'</b>':'')+'</span></div>'+((c.paper&&c.paper.length)?'<div class="row"><span class="note" style="color:#a8322c"><b>Техніка лише на папері:</b> '+c.paper.map(function(k){return EQ[k].n.toLowerCase()}).join(', ')+'. Купи до місяця '+c.pDue+' (лишилось '+Math.max(0,c.pDue-S.month)+' міс.), інакше штраф і перевірки.</span></div>':'')+'</div>';
   });
   return h;
 }
+function paperC(k){return Math.round(EQ[k].c*.15)}
+function paperSum(){var t=0,k;for(k in AN.paper)if(!S.eq[k])t+=paperC(k);return t}
 function openAnnual(id){
   if(S.over)return;
   var a=S.annual.filter(function(x){return x.id===id})[0];if(!a)return;
-  D=null;AN={a:a,bribe:0,tailor:false,docs:true,tier:1};
+  D=null;AN={a:a,bribe:0,tailor:false,docs:true,tier:1,paper:{}};
   $('dealWrap').hidden=false;renderAnnual();
   var b=$('deal').querySelector('button');if(b)b.focus();
 }
@@ -364,8 +377,15 @@ function renderAnnual(){
   h+='<p class="sub"><span class="tag t-tender">річний тендер</span>Дедлайн: через '+annLeft(a)+' міс. · результат на початку місяця '+a.deadline+'</p>';
   h+='<div class="sum"><div><span>Бюджет на рік</span><span>'+a.budget+' тис.</span></div><div><span>Оплата</span><span>'+TERMS[a.term].n+'</span></div><div class="tot"><span>Отримаєш усього</span><span class="pos">'+annTotal(a)+' тис.</span></div></div><p class="note" style="margin-top:4px">'+TERMS[a.term].d+'</p>';
   h+='<div class="sec">Вимоги</div><div class="sum"><div><span>ТОВ</span><span class="'+(hasCo()?'pos':'neg')+'">'+(hasCo()?'є ✓':'нема ✗')+'</span></div>';
-  E2.forEach(function(k){h+='<div><span>'+EQ[k].n+'</span><span class="'+(S.eq[k]?'pos':'neg')+'">'+(S.eq[k]?'є ✓':'нема, '+EQ[k].c+' тис. ✗')+'</span></div>';});
-  h+='</div><p class="note" style="margin-top:4px">Техніку треба мати на день підсумків. Без неї заявку відсіють. Купуй у вкладці «Фірми», оренда не годиться.</p>';
+  E2.forEach(function(k){var pp=!S.eq[k]&&AN.paper[k];h+='<div><span>'+EQ[k].n+'</span><span class="'+(S.eq[k]||pp?'pos':'neg')+'">'+(S.eq[k]?'є ✓':(pp?'на папері ✓':'нема, '+EQ[k].c+' тис. ✗'))+'</span></div>';});
+  h+='</div>';
+  var miss0=E2.filter(function(k){return !S.eq[k]});
+  if(miss0.length){
+    h+='<div class="list" style="margin-top:6px">';
+    miss0.forEach(function(k){h+='<button class="opt" data-n="paper" data-v="'+k+'" aria-pressed="'+(!!AN.paper[k])+'"><b>'+EQ[k].n+' на куму · '+paperC(k)+' тис.</b><small>Заявку не відсіють. Якщо виграєш, мусиш купити справжню техніку за 3 місяці, інакше перевірки й штраф 20%. Підозра +8.</small></button>';});
+    h+='</div>';
+  }
+  h+='<p class="note" style="margin-top:4px">Техніку перевіряють на день підсумків. Купуй у вкладці «Фірми» або оформи «на папері» (тільки на цей тендер), але тоді потім її доведеться таки купити.</p>';
   if(a.applied){
     var ap=a.applied;
     h+='<div class="sec">Заявка подана</div><div class="sum"><div><span>Шанс</span><span>≈ '+Math.round(annChance(a,ap)*100)+'%</span></div><div><span>Виконання</span><span>'+TIERS[ap.tier].n+'</span></div><div><span>Забезпечення заморожено</span><span>'+ap.lock+' тис.</span></div></div>';
@@ -379,7 +399,7 @@ function renderAnnual(){
   h+='<button class="opt" data-n="tailor" aria-pressed="'+AN.tailor+'"><b>Умови під себе · '+tailC+' тис.</b><small>+22% до шансу, підозра +2 за виграшу.</small></button>';
   [0,.1,.2].forEach(function(b,i){h+='<button class="opt" data-n="bribe" data-v="'+b+'" aria-pressed="'+(AN.bribe===b)+'"><b>'+(b?'Відкат '+Math.round(b*100)+'%':'Без відкату')+'</b><small>'+(b?'Платиш '+Math.round(a.budget*b)+' тис. лише у разі виграшу.':'Тільки чесна конкуренція.')+'</small></button>';});
   h+='</div>';
-  var now=lock+(AN.docs?docsC:0)+(AN.tailor?tailC:0),ap2={bribe:AN.bribe,tailor:AN.tailor,docs:AN.docs},profit=annTotal(a)-12*annMCost(a,AN.tier)-Math.round(a.budget*AN.bribe)-(AN.docs?docsC:0)-(AN.tailor?tailC:0);
+  var now=lock+(AN.docs?docsC:0)+(AN.tailor?tailC:0)+paperSum(),ap2={bribe:AN.bribe,tailor:AN.tailor,docs:AN.docs},profit=annTotal(a)-12*annMCost(a,AN.tier)-Math.round(a.budget*AN.bribe)-(AN.docs?docsC:0)-(AN.tailor?tailC:0);
   h+='<div class="sec">Підсумок</div><div class="sum"><div><span>Шанс виграти</span><span>≈ '+Math.round(annChance(a,ap2)*100)+'%</span></div><div><span>Платиш зараз</span><span class="neg">−'+now+' тис.</span></div><div><span>з них забезпечення (повернуть)</span><span>'+lock+' тис.</span></div><div class="tot"><span>Прибуток за рік у разі виграшу</span><span class="'+(profit>=0?'pos':'neg')+'">'+(profit>=0?'+':'')+profit+' тис.</span></div></div>';
   h+='<div class="acts"><button class="btn primary" data-n="apply"'+((!hasCo()||S.cash<now)?' disabled':'')+'>Подати заявку</button><button class="btn" data-n="close">Назад</button></div>';
   if(!hasCo())h+='<p class="note" style="margin-top:6px">Спочатку потрібне ТОВ: ранг «Підрядник».</p>';
@@ -394,12 +414,13 @@ $('deal').addEventListener('click',function(e){
   else if(n==='docs')AN.docs=!AN.docs;
   else if(n==='tailor')AN.tailor=!AN.tailor;
   else if(n==='bribe')AN.bribe=+b.dataset.v;
+  else if(n==='paper'){var pk=b.dataset.v;if(AN.paper[pk])delete AN.paper[pk];else AN.paper[pk]=true;}
   else if(n==='close')return closeDeal();
   else if(n==='withdraw'){S.cash+=a.applied.lock;a.applied=null;addLog('Заявку на «'+a.title+'» відкликано. Забезпечення повернули.','');closeDeal();ui();return;}
   else if(n==='apply'){
-    var lock=Math.round(a.budget*.02),now=lock+(AN.docs?Math.round(a.budget*.03):0)+(AN.tailor?Math.round(a.budget*.04):0);
+    var lock=Math.round(a.budget*.02),now=lock+(AN.docs?Math.round(a.budget*.03):0)+(AN.tailor?Math.round(a.budget*.04):0)+paperSum();
     if(S.cash<now||!hasCo())return;
-    S.cash-=now;a.applied={bribe:AN.bribe,tailor:AN.tailor,docs:AN.docs,tier:AN.tier,lock:lock};
+    S.cash-=now;a.applied={bribe:AN.bribe,tailor:AN.tailor,docs:AN.docs,tier:AN.tier,lock:lock,paper:Object.keys(AN.paper).filter(function(k){return !S.eq[k]})};
     addLog('Подано заявку на «'+a.title+'». Тепер готуйся: техніка й гроші.','good');
     closeDeal();ui();return;
   }
