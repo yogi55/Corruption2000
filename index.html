@@ -410,7 +410,7 @@ function citySites(){
     if(fail){
       S.stakes=S.stakes.filter(function(k){
         if(k.id!==st.id)return true;
-        S.risk=clamp(S.risk+(k.kind==='kick'?8:4),0,100);return false;
+        S.risk=clamp(S.risk+(k.kind==='kick'?8:4),0,100);S.contacts=Math.max(0,S.contacts-(k.kind==='lg'?3:(k.kind==='kick'?3:2)));return false;
       });
       addLog('Об\'єкт «'+siteTitle(st)+'» заморозили: прокуратура. Гроші, вкладені в «делюгу», пропали.','bad');
     } else {
@@ -420,7 +420,7 @@ function citySites(){
         o.sk=null;
       }
       var got=0;
-      S.stakes=S.stakes.filter(function(k){if(k.id!==st.id)return true;got+=k.ret;S.fame+=1;return false;});
+      S.stakes=S.stakes.filter(function(k){if(k.id!==st.id)return true;got+=k.ret;S.fame+=1;S.contacts+=(k.kind==='lg'?3:2);return false;});
       if(got){S.cash+=got;addLog('Об\'єкт «'+siteTitle(st)+'» здано. Твоя частка: +'+got+' тис.','good');}
       else addLog('У місті здали об\'єкт: «'+siteTitle(st)+'». Тебе, звісно, не покликали.','');
     }
@@ -457,13 +457,13 @@ function openEvent(){
   if(e.kind==='invite'){
     var st=e.st,sm=Math.round(st.budget*.08),lg=Math.round(st.budget*.2),kc=Math.round(st.budget*.06);
     h='<h3 id="auTitle">Запрошення в «делюгу»</h3><div class="in"><p><b>'+siteTitle(st)+'</b>'+(st.kind==='build'?'':' ('+st.name+')')+'</p><p>Знайомий із забудовника «'+st.owner+'» шепоче: об\'єкт на '+st.budget+' тис., будівництво ще '+st.left+' міс. Місце в «делюзі» є, але ризик провалу ≈ '+Math.round(st.risk*100)+'%.</p><div class="list">';
-    h+='<button class="opt" data-ev="sm"'+(S.cash<sm?' disabled':'')+'><b>Невеликий пай · '+sm+' тис.</b><small>Повернеться '+Math.round(sm*1.4)+' тис. після здачі. Підозра +3.</small></button>';
-    h+='<button class="opt" data-ev="lg"'+(S.cash<lg?' disabled':'')+'><b>Великий пай · '+lg+' тис.</b><small>Повернеться '+Math.round(lg*1.6)+' тис. після здачі. Підозра +5.</small></button>';
-    h+='<button class="opt" data-ev="kick"><b>Закрити «дозволи»: частка '+kc+' тис.</b><small>Вкладати нічого, отримаєш при здачі. Підозра +5, зв\'язки +2.</small></button>';
+    h+='<button class="opt" data-ev="sm"'+(S.cash<sm?' disabled':'')+'><b>Невеликий пай · '+sm+' тис.</b><small>Повернеться '+Math.round(sm*1.4)+' тис. після здачі. Підозра +3, зв\'язки +1 (і +2 після успіху).</small></button>';
+    h+='<button class="opt" data-ev="lg"'+(S.cash<lg?' disabled':'')+'><b>Великий пай · '+lg+' тис.</b><small>Повернеться '+Math.round(lg*1.6)+' тис. після здачі. Підозра +5, зв\'язки +2 (і +3 після успіху).</small></button>';
+    h+='<button class="opt" data-ev="kick"><b>Закрити «дозволи»: частка '+kc+' тис.</b><small>Вкладати нічого, отримаєш при здачі. Підозра +5, зв\'язки +2. Провал: зв\'язки −3.</small></button>';
     h+='<button class="opt" data-ev="no"><b>Відмовитись</b><small>Знайомий образиться з імовірністю 30% (зв\'язки −1).</small></button></div></div>';
   } else {
     var fee=Math.round(e.x*e.pct);
-    h='<h3 id="auTitle">Пропозиція «прокрутити»</h3><div class="in"><p>'+e.who.charAt(0).toUpperCase()+e.who.slice(1)+' просить пропустити через твої ФОПи <b>'+e.x+' тис.</b> «за послуги». Тобі залишаться <b>'+Math.round(e.pct*100)+'%</b>, тобто '+fee+' тис.</p><p class="note">Обіг через ФОП росте, а разом із ним увага податкової. Клієнт може виявитись «під ковпаком».</p><div class="list">';
+    h='<h3 id="auTitle">Пропозиція «прокрутити»</h3><div class="in"><p>'+e.who.charAt(0).toUpperCase()+e.who.slice(1)+' просить пропустити через твої ФОПи <b>'+e.x+' тис.</b> «за послуги». Тобі залишаться <b>'+Math.round(e.pct*100)+'%</b>, тобто '+fee+' тис.</p><p class="note">Обіг через ФОП росте, а разом із ним увага податкової. Зв\'язки +'+(e.x>=300?2:1)+'. Клієнт може виявитись «під ковпаком».</p><div class="list">';
     S.fops.forEach(function(f,i){
       var ok=evOk(f,e.x);
       h+='<button class="opt" data-ev="wash" data-v="'+i+'"'+(ok?'':' disabled')+'><b>Через «'+f.name+'» · +'+fee+' тис.</b><small>'+(f.isCo?'ТОВ без ліміту':'вільний ліміт '+Math.max(0,Math.round(FOP_LIMIT-f.used))+' тис.')+(ok?'':' · не вміщається')+'</small></button>';
@@ -476,15 +476,16 @@ function resolveEvent(k,v){
   var e=S.events.shift();if(!e)return;
   if(e.kind==='invite'){
     var st=e.st;
-    if(k==='sm'||k==='lg'){var inv=Math.round(st.budget*(k==='sm'?.08:.2));if(S.cash<inv){S.events.unshift(e);return;}S.cash-=inv;S.stakes.push({id:st.id,kind:k,invest:inv,ret:Math.round(inv*(k==='sm'?1.4:1.6))});S.risk=clamp(S.risk+(k==='sm'?3:5),0,100);addLog('Ти в «делюзі» на об\'єкті «'+siteTitle(st)+'»: вклав '+inv+' тис.','');}
+    if(k==='sm'||k==='lg'){var inv=Math.round(st.budget*(k==='sm'?.08:.2));if(S.cash<inv){S.events.unshift(e);return;}S.cash-=inv;S.stakes.push({id:st.id,kind:k,invest:inv,ret:Math.round(inv*(k==='sm'?1.4:1.6))});S.risk=clamp(S.risk+(k==='sm'?3:5),0,100);S.contacts+=(k==='sm'?1:2);addLog('Ти в «делюзі» на об\'єкті «'+siteTitle(st)+'»: вклав '+inv+' тис.','');}
     else if(k==='kick'){S.stakes.push({id:st.id,kind:'kick',invest:0,ret:Math.round(st.budget*.06)});S.risk=clamp(S.risk+5,0,100);S.contacts+=2;addLog('Закрив «дозволи» на об\'єкті «'+siteTitle(st)+'». Частку отримаєш після здачі.','');}
     else{if(Math.random()<.3){S.contacts=Math.max(0,S.contacts-1);addLog('Знайомий образився, що ти відмовився від «делюги».','bad');}}
-  } else if(k==='wash'){
+  } else if(k==='no'){if(Math.random()<.25){S.contacts=Math.max(0,S.contacts-1);addLog('Клієнт не дочекався і пішов до іншого.','bad');}}
+  else if(k==='wash'){
     var f=S.fops[+v];if(!f||!evOk(f,e.x)){S.events.unshift(e);return;}
     var fee=Math.round(e.x*e.pct);
-    S.cash+=fee;f.used+=e.x;S.contacts+=1;S.risk=clamp(S.risk+2+e.x/80,0,100);
+    S.cash+=fee;f.used+=e.x;S.contacts+=(e.x>=300?2:1);S.risk=clamp(S.risk+2+e.x/80,0,100);
     addLog('Через «'+f.name+'» прокрутили '+e.x+' тис. Твої '+fee+' тис. уже в кишені.','');
-    if(Math.random()<.15){S.audits.push({kind:f.isCo?'co':'fop',f:f,fine:Math.round(e.x*.3)});S.risk=clamp(S.risk+8,0,100);addLog('Клієнт виявився «під ковпаком»: на ФОП звернули увагу.','bad');}
+    if(Math.random()<.15){S.audits.push({kind:f.isCo?'co':'fop',f:f,fine:Math.round(e.x*.3)});S.risk=clamp(S.risk+8,0,100);S.contacts=Math.max(0,S.contacts-2);addLog('Клієнт виявився «під ковпаком»: на ФОП звернули увагу.','bad');}
   }
   $('auWrap').hidden=true;check();ui();maybeAudit();
 }
