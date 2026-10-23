@@ -43,6 +43,8 @@ body{
 .cell span{display:block;font:400 11px/1.5 var(--pix);color:var(--lcdg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell .bar{height:6px;background:#06130b;margin-top:2px;border:1px solid #2a5a3a}
 .cell .bar i{display:block;height:100%}
+#pauseTag{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;pointer-events:none;font:400 26px/1 var(--pix);letter-spacing:5px;color:#fff;background:rgba(10,20,30,.62);padding:12px 22px 12px 27px;border:3px solid #fff;text-shadow:2px 2px 0 #000}
+#pauseTag[hidden]{display:none}
 .mapwrap{position:relative;height:min(64vh,560px);min-height:360px;background:#14242f;overflow:hidden;touch-action:none}
 #map{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:grab}
 #map:active{cursor:grabbing}
@@ -131,6 +133,7 @@ button:focus-visible{outline:2px dotted var(--ink);outline-offset:-5px}
       <div class="ctl" id="zoomctl"><button class="btn sq" data-z="1" aria-label="Наблизити">+</button><button class="btn sq" data-z="-1" aria-label="Віддалити">−</button><button class="btn sq" data-home="1" aria-label="До свого району" title="До свого району">⌂</button><button class="btn sq" id="menuBtn" aria-label="Меню" title="Меню">≡</button></div>
       <div class="ctl r" id="speed" role="group" aria-label="Швидкість часу"></div>
       <canvas id="mini" width="80" height="80" aria-label="Мінікарта міста"></canvas>
+      <div id="pauseTag" hidden aria-live="polite">ПАУЗА</div>
     </div>
     <div class="news"><b id="monthL">Місяць 1</b><div class="sunk" id="news"></div></div>
   </section>
@@ -803,7 +806,7 @@ function tryDeal(){
     addLog(LOSE[(Math.random()*LOSE.length)|0],'bad');
     var lo=D.off;
     if(lo){
-      floaters.push({X:lo.x,Y:lo.y,txt:'Програно',col:'#ff8a80',t0:performance.now()});
+      floaters.push({X:lo.x,Y:lo.y,txt:'Програно',col:'#ff8a80',t0:gclock()});
       addLog('«'+lo.title+'» ('+lo.name+') пішов до когось іншого. Заявка закрита.','bad');
       closeDeal();replaceOffer(lo);ui();
     } else {closeDeal();ui();}
@@ -817,7 +820,7 @@ function signDeal(){
     if(D.bribe>0||D.tailor)S.dirty=true;
     S.risk=clamp(S.risk+1+(D.bribe*10)+(D.tailor?2:0),0,100);
     if(D.bribe>0)S.contacts+=3;
-    floaters.push({X:o.x,Y:o.y,txt:'Кіоск твій',col:'#d6c8ff',t0:performance.now()});
+    floaters.push({X:o.x,Y:o.y,txt:'Кіоск твій',col:'#d6c8ff',t0:gclock()});
     addLog('МАФ оформлено. Тепер щомісяця +7 тис., поки не прийдуть із перевіркою.','good');
   } else {
     var t=TIERS[D.tier],f=S.fops[D.fop],pay=payAmt(),rfs=realF(o),eqk=reqEq(o),eqc=(eqk&&!S.eq[eqk])?(D.eqMode==='rent'?Math.round(EQ[eqk].c*.3):EQ[eqk].c):0,costNow=Math.round(o.budget*t.cost*rfs),up2=costNow+bribeAmt+tailorAmt+eqc,avans=Math.round(pay*.25);
@@ -832,7 +835,7 @@ function signDeal(){
     if(D.bribe>0)S.contacts+=3;
     if(D.infl)S.inflate+=1;
     if(o.dev){obj.t='N';obj.c=100;obj.q=1;obj.dec=null;obj.by='me';obj.sk=null;var dv2=DEVD[o.dev];S.angry+=dv2.ang;S.risk=clamp(S.risk+dv2.risk,0,100);S.devs=(S.devs||0)+1;addLog(dv2.log,'bad');}
-    floaters.push({X:o.x,Y:o.y,txt:'+'+(pay-up2)+' тис.',col:'#7dff9e',t0:performance.now()});
+    floaters.push({X:o.x,Y:o.y,txt:'+'+(pay-up2)+' тис.',col:'#7dff9e',t0:gclock()});
     addLog(o.title+': '+t.n.toLowerCase()+'. Прибуток '+(pay-up2)+' тис.: аванс '+avans+' уже в кишені, решта через '+(o.kind==='direct'?1:2)+' міс.','');
   }
   closeDeal();updateRating();genOffers();dirtyMini=true;check();ui();
@@ -2092,14 +2095,20 @@ $('tBack').addEventListener('click',function(){titleShow(null);});
 $('menuBtn').addEventListener('click',openTitle);
 document.addEventListener('keydown',function(e){if(TITLE&&e.key==='Enter'&&$('tPanel').hidden){if(STARTED||hasSave())contGame();else startGame(true);}});
 var lastT=0;
+var poff=0,pausedShown=false;
+function gclock(){return performance.now()-poff}
 function frame(now){
   var dt=lastT?Math.min(80,now-lastT):0;lastT=now;
-  if(!reduce)cars.forEach(function(c){c.pos+=c.dir*c.spd*dt;if(c.dir>0&&c.pos>c.b)c.pos=c.a;if(c.dir<0&&c.pos<c.a)c.pos=c.b;});
+  var run=!!S&&S.speed>0&&!S.over&&!modalOpen();
+  if(!TITLE&&!run)poff+=dt;
+  var gt=now-poff,pv=!TITLE&&!!S&&S.speed===0&&!S.over;
+  if(pv!==pausedShown){pausedShown=pv;$('pauseTag').hidden=!pv;}
+  if(!reduce&&(run||TITLE))cars.forEach(function(c){c.pos+=c.dir*c.spd*dt;if(c.dir>0&&c.pos>c.b)c.pos=c.a;if(c.dir<0&&c.pos<c.a)c.pos=c.b;});
   if(TITLE){drawTitle(now);requestAnimationFrame(frame);return;}
   tickTime(dt);
   resizeMap();
-  drawMap(now);drawMini();
-  if(!$('pane-castle').hidden)drawCastle(now);
+  drawMap(gt);drawMini();
+  if(!$('pane-castle').hidden)drawCastle(gt);
   requestAnimationFrame(frame);
 }
 if(typeof window.__EXPOSE==='function')window.__EXPOSE({get S(){return S},get D(){return D},get E(){return E},newGame:newGame,nextMonth:nextMonth,tickTime:tickTime,openDeal:openDeal,tryDeal:tryDeal,signDeal:signDeal,renderDeal:renderDeal,rankUp:rankUp,openElection:openElection,runElection:runElection,resolveEvent:resolveEvent,citySites:citySites,genHappenings:genHappenings,openAnnual:openAnnual,annualTick:annualTick,resolveAudit:resolveAudit,maybeAudit:maybeAudit,genOffers:genOffers,ui:ui,drawMap:drawMap,drawMini:drawMini,drawCastle:drawCastle,chance:chance,setD:function(k,v){D[k]=v;},updateRating:updateRating,tap:tap,setZoom:setZoom,centerOn:centerOn});
